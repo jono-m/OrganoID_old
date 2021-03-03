@@ -4,6 +4,10 @@
 #SBATCH --partition=broadwl
 #SBATCH --chdir=/home/jono/Repositories/OrganoID
 
+echo 'Starting batch job...'
+echo 'Loading Conda module...'
 module load python
+echo 'Loading OrganoID environment (CPU)'
 conda activate OrganoID_cpu
+echo 'Executing python script...'
 python organoID.py train -A -P -F /home/jono/ML/2019_originalX /home/jono/ML/2019_originalY
