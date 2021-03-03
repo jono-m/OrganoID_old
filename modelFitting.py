@@ -8,6 +8,10 @@ from PIL import Image
 from pathlib import Path
 
 
+def MeanIoU(y_true, y_pred):
+    return mean_iou(y_true, y_pred, 2)
+
+
 def FitModel(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Path, modelSavePath: Path, epochs: int,
              test_size=0.5, batch_size=32, patience=5):
     print("-----------------------")
@@ -96,7 +100,7 @@ def FitModel(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Pa
     outputs = Conv2D(1, (1, 1), activation='sigmoid')(c9)
 
     model = Model(inputs=[inputs], outputs=[outputs])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[mean_iou, 'accuracy'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     model.summary()
     print("\tDone!")
 
