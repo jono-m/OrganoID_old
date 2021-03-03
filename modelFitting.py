@@ -6,13 +6,12 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from PIL import Image
 from pathlib import Path
-import singleLineLogging
 
 
 def FitModel(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Path, modelSavePath: Path, epochs: int,
              test_size=0.5, batch_size=32, patience=5):
     print("-----------------------")
-    print("Training model...")
+    print("Building model...")
     print("\tImages directory: " + str(trainingImagesPath))
     print("\tSegmentations directory: " + str(trainingSegmentationsPath))
     print("\tModel directory: " + str(modelSavePath))
@@ -29,21 +28,20 @@ def FitModel(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Pa
     imageSize = images[0].size
 
     for imageIndex, image in enumerate(images):
-        singleLineLogging.DoLog("Converting image " + str(imageIndex + 1) + "/" + str(len(images)))
+        print("\tConverting image " + str(imageIndex + 1) + "/" + str(len(images)))
         if image.mode == 'I':
             image = image.point(lambda x: x * (1 / 255))
         images[imageIndex] = np.array(image.resize(imageSize).convert(mode="RGB"))
     images = np.moveaxis(np.stack(images, axis=-1), -1, 0)
 
-    singleLineLogging.ClearLog()
     print("\tDone!")
 
     for segmentationindex, segmentation in enumerate(segmentations):
-        singleLineLogging.DoLog("Converting segmentation " + str(segmentationindex + 1) + "/" + str(len(segmentations)))
+        print("\tConverting segmentation " + str(segmentationindex + 1) + "/" + str(len(segmentations)))
         segmentations[segmentationindex] = np.array(segmentation.resize(imageSize).convert(mode="1"))
 
     segmentations = np.moveaxis(np.stack(segmentations, axis=-1), -1, 0)
-    singleLineLogging.ClearLog()
+
     print("\tDone!")
 
     print("\tSplitting training and testing datasets (" + str(test_size * 100) + "% for testing)...")

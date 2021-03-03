@@ -18,7 +18,7 @@ class JobSettings:
                                          help="Preprocess training data.")
         self.trainSubparser.add_argument("-F", "--fit", dest='doFit', action='store_true',
                                          help="Fit model to training data.")
-        self.trainSubparser.add_argument("-M", "--modelPath", dest='modelPath', nargs='?', default="pathlib.Path('.')",
+        self.trainSubparser.add_argument("-M", "--modelPath", dest='modelPath', nargs='?', default=".",
                                          type=pathlib.Path)
         self.trainSubparser.add_argument("imagePath", help="Path to image training data.", type=pathlib.Path)
         self.trainSubparser.add_argument("segmentationPath", help="Path to segmentation training data.",

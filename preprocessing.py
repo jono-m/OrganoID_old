@@ -1,6 +1,5 @@
 from PIL import Image
 from pathlib import Path
-import singleLineLogging
 
 
 def PreprocessImages(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Path):
@@ -22,7 +21,7 @@ def PreprocessImages(jobID: str, trainingImagesPath: Path, trainingSegmentations
 
     imageNumber = 1
     for imagePath in imagePaths:
-        singleLineLogging.DoLog("Processing image " + str(imageNumber) + "/" + str(numImages) + "...")
+        print("\tProcessing image " + str(imageNumber) + "/" + str(numImages) + "...")
         filename = imagePath.name
         outputPath = imagesOutPath / filename
         image = Image.open(imagePath)
@@ -30,23 +29,18 @@ def PreprocessImages(jobID: str, trainingImagesPath: Path, trainingSegmentations
         image.save(str(outputPath))
         imageNumber += 1
 
-    singleLineLogging.ClearLog()
-
     print("\tDone!")
 
     numSegmentations = len(list(segmentationPaths))
     segmentationNumber = 1
     for segmentationPath in segmentationPaths:
-        singleLineLogging.DoLog(
-            "Processing segmentation " + str(segmentationNumber) + "/" + str(numSegmentations) + "...")
+        print("\tProcessing segmentation " + str(segmentationNumber) + "/" + str(numSegmentations) + "...")
         filename = segmentationPath.name
         outputPath = segmentationsOutPath / filename
         image = Image.open(segmentationPath.resolve())
         image.convert(mode='1')
         image.save(outputPath.resolve())
         segmentationNumber += 1
-
-    singleLineLogging.ClearLog()
 
     print("\tDone!")
 
