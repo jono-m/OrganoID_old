@@ -1,25 +1,12 @@
 from tensorflow.keras.layers import Input, Lambda, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
 from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import EarlyStopping, Callback
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.metrics import mean_iou
 import numpy as np
 from sklearn.model_selection import train_test_split
 from PIL import Image
 from pathlib import Path
 import singleLineLogging
-
-
-class MetricsCheckpoint(Callback):
-    """Callback that saves metrics after each epoch"""
-
-    def __init__(self, savepath):
-        super().__init__()
-        self.savepath = savepath
-        self.history = {}
-
-    def on_epoch_end(self, epoch, logs=None):
-        for k, v in logs.items():
-            self.history.setdefault(k, []).append(v)
-        np.save(self.savepath, self.history)
 
 
 def TrainModel(jobID: str, trainingImagesPath: str, trainingSegmentationsPath: str, modelSavePath: str, epochs: int,
@@ -113,7 +100,7 @@ def TrainModel(jobID: str, trainingImagesPath: str, trainingSegmentationsPath: s
     outputs = Conv2D(1, (1, 1), activation='sigmoid')(c9)
 
     model = Model(inputs=[inputs], outputs=[outputs])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[mean_iou, 'accuracy'])
     model.summary()
     print("\tDone!")
 
