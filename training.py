@@ -1,7 +1,6 @@
 from tensorflow.keras.layers import Input, Lambda, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, Callback
-from tensorflow.keras.metrics import MeanIoU
 import numpy as np
 from sklearn.model_selection import train_test_split
 from PIL import Image
@@ -114,7 +113,7 @@ def TrainModel(jobID: str, trainingImagesPath: str, trainingSegmentationsPath: s
     outputs = Conv2D(1, (1, 1), activation='sigmoid')(c9)
 
     model = Model(inputs=[inputs], outputs=[outputs])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[MeanIoU(2), 'accuracy'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     model.summary()
     print("\tDone!")
 
@@ -125,7 +124,7 @@ def TrainModel(jobID: str, trainingImagesPath: str, trainingSegmentationsPath: s
               batch_size=batch_size,
               verbose=1,
               epochs=epochs,
-              callbacks=[earlystopper, MetricsCheckpoint(modelJobSavePath / 'logs')])
+              callbacks=[earlystopper])
     print("\tDone!")
 
     print("\tSaving model...")

@@ -3,9 +3,9 @@ import preprocessing
 import training
 from datetime import datetime
 
-trainingImagesPath = "C:/Users/jonoj/Documents/ML/2019_originalX"
-trainingSegmentationsPath = "C:/Users/jonoj/Documents/ML/2019_originalY"
-modelSavePath = "C:/Users/jonoj/Documents/ML/Models"
+trainingImagesPath = "/home/jono/ML/2019_originalX"
+trainingSegmentationsPath = "/home/jono/ML/2019_originalY"
+modelSavePath = "/home/jono/ML/Models"
 
 jobID = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
