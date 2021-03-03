@@ -1,8 +1,8 @@
-from keras.layers import Input, Lambda, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
-from keras.models import Model
-from keras.callbacks import EarlyStopping, Callback
+from tensorflow.keras.layers import Input, Lambda, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import EarlyStopping, Callback
+from tensorflow.keras.metrics import MeanIoU
 import numpy as np
-import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from PIL import Image
 from pathlib import Path
@@ -114,7 +114,7 @@ def TrainModel(jobID: str, trainingImagesPath: str, trainingSegmentationsPath: s
     outputs = Conv2D(1, (1, 1), activation='sigmoid')(c9)
 
     model = Model(inputs=[inputs], outputs=[outputs])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[tf.keras.metrics.MeanIoU(2), 'accuracy'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[MeanIoU(2), 'accuracy'])
     model.summary()
     print("\tDone!")
 
