@@ -3,11 +3,11 @@ from pathlib import Path
 import re
 
 
-def AugmentImages(jobID: str, trainingImagesPath: str, trainingSegmentationsPath: str, samplesToTake: int):
+def AugmentImages(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Path, samplesToTake: int):
     print("-----------------------")
     print("Augmenting training data...")
-    print("\tImages directory: " + trainingImagesPath)
-    print("\tSegmentations directory: " + trainingSegmentationsPath)
+    print("\tImages directory: " + str(trainingImagesPath))
+    print("\tSegmentations directory: " + str(trainingSegmentationsPath))
 
     outputDirectory = 'OrganoID_aug_' + jobID
 
@@ -61,8 +61,8 @@ def AugmentImages(jobID: str, trainingImagesPath: str, trainingSegmentationsPath
     p.zoom(probability=1, min_factor=1.1, max_factor=1.4)
     p.sample(samplesToTake)
 
-    trainingImagesAugmentedPath = Path(trainingImagesPath).resolve() / outputDirectory
-    trainingSegmentationsAugmentedPath = Path(trainingSegmentationsPath).resolve() / outputDirectory
+    trainingImagesAugmentedPath = trainingImagesPath / outputDirectory
+    trainingSegmentationsAugmentedPath = trainingSegmentationsPath.resolve() / outputDirectory
     trainingSegmentationsAugmentedPath.mkdir(exist_ok=True)
 
     results = list(trainingImagesAugmentedPath.glob("*.*"))
@@ -82,9 +82,9 @@ def AugmentImages(jobID: str, trainingImagesPath: str, trainingSegmentationsPath
 
     print("\tDone!")
 
-    results = str(trainingImagesAugmentedPath.resolve()), str(trainingSegmentationsAugmentedPath.resolve())
-    print("Augmented images saved to '" + results[0])
-    print("Augmented segmentations saved to '" + results[1])
+    results = trainingImagesAugmentedPath, trainingSegmentationsAugmentedPath
+    print("Augmented images saved to '" + str(results[0]))
+    print("Augmented segmentations saved to '" + str(results[1]))
     print("-----------------------")
 
     return results

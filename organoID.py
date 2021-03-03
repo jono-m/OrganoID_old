@@ -1,26 +1,13 @@
-import augmentation
-import preprocessing
-import training
 from datetime import datetime
+from SettingsParser import JobSettings
 
-trainingImagesPath = "/home/jono/ML/2019_originalX"
-trainingSegmentationsPath = "/home/jono/ML/2019_originalY"
-modelSavePath = "/home/jono/ML/Models"
+settings = JobSettings()
 
-jobID = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+print("Beginning OrganoID job " + settings.jobID + "...")
 
-print("Beginning OrganoID job " + jobID + "...")
+if settings.GetMode() == "train":
+    import training
 
-trainingImagesPath, trainingSegmentationsPath = preprocessing.PreprocessImages(jobID,
-                                                                               trainingImagesPath,
-                                                                               trainingSegmentationsPath)
-
-trainingImagesPath, trainingSegmentationsPath = augmentation.AugmentImages(jobID,
-                                                                           trainingImagesPath,
-                                                                           trainingSegmentationsPath,
-                                                                           10)
-
-modelPath = training.TrainModel(jobID, trainingImagesPath, trainingSegmentationsPath, modelSavePath, epochs=1,
-                                test_size=0.2, patience=5)
+    training.DoTraining(settings)
 
 print("Job complete.")
