@@ -14,6 +14,10 @@ class JobSettings:
 
         self.trainSubparser.add_argument("-A", "--augment", dest='doAugment', action='store_true',
                                          help="Augment training data.")
+        self.trainSubparser.add_argument("-B", "--batch", dest='batchSize', nargs='?', default=1,
+                                         help="Augment training data.", type=int)
+        self.trainSubparser.add_argument("-TS", "--testSplit", dest='testSplit', nargs='?', default=0.8,
+                                         help="Augment training data.", type=float)
         self.trainSubparser.add_argument("-P", "--preprocess", dest='doPreprocess', action='store_true',
                                          help="Preprocess training data.")
         self.trainSubparser.add_argument("-F", "--fit", dest='doFit', action='store_true',
@@ -30,6 +34,12 @@ class JobSettings:
 
     def ShouldPreprocess(self) -> bool:
         return self.args.doPreprocess
+
+    def GetBatchSize(self) -> int:
+        return self.args.batchSize
+
+    def GetTestSplit(self) -> float:
+        return self.args.testSplit
 
     def ShouldAugment(self) -> bool:
         return self.args.doAugment

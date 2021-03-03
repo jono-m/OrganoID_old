@@ -22,4 +22,4 @@ def DoTraining(settings: JobSettings):
     if settings.ShouldFit():
         import modelFitting
         modelFitting.FitModel(settings.jobID, trainingImagesPath, trainingSegmentationsPath, modelSavePath, epochs=1,
-                              test_size=0.2, patience=5)
+                              test_size=settings.GetTestSplit(), patience=1, batch_size=settings.GetBatchSize())

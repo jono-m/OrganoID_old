@@ -13,14 +13,12 @@ def MeanIoU(y_true, y_pred):
 
 
 def FitModel(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Path, modelSavePath: Path, epochs: int,
-             test_size=0.5, batch_size=32, patience=5):
+             test_size=0.5, batch_size=1, patience=5):
     print("-----------------------")
     print("Building model...")
     print("\tImages directory: " + str(trainingImagesPath))
     print("\tSegmentations directory: " + str(trainingSegmentationsPath))
     print("\tModel directory: " + str(modelSavePath))
-
-    modelJobSavePath = modelSavePath / ("OrganoID_model_" + jobID)
 
     print("\tLoading images...")
     images = [Image.open(imagePath) for imagePath in sorted(trainingImagesPath.iterdir()) if imagePath.is_file()]
@@ -115,6 +113,10 @@ def FitModel(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Pa
     print("\tDone!")
 
     print("\tSaving model...")
+
+    modelJobSavePath = modelSavePath / ("OrganoID_model_" + jobID)
+    modelJobSavePath.mkdir(exist_ok=True)
+
     model.save(modelJobSavePath)
 
     results = modelJobSavePath
