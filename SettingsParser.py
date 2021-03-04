@@ -10,7 +10,26 @@ class JobSettings:
 
         subparsers = parser.add_subparsers(dest="subparser_name")
 
-        self.trainSubparser = subparsers.add_parser("train", help="Training commands.")
+        self.executeSubparser = subparsers.add_parser("execute", help="Training commands.")
+
+        self.executeSubparser.add_argument("-A", "--augment", dest='doAugment', action='store_true',
+                                           help="Augment training data.")
+        self.executeSubparser.add_argument("-B", "--batch", dest='batchSize', nargs='?', default=1,
+                                           help="Augment training data.", type=int)
+        self.executeSubparser.add_argument("-TS", "--testSplit", dest='testSplit', nargs='?', default=0.8,
+                                           help="Augment training data.", type=float)
+        self.executeSubparser.add_argument("-P", "--preprocess", dest='doPreprocess', action='store_true',
+                                           help="Preprocess training data.")
+        self.executeSubparser.add_argument("-F", "--fit", dest='doFit', action='store_true',
+                                           help="Fit model to training data.")
+        self.executeSubparser.add_argument("-M", "--modelPath", dest='modelPath', nargs='?', default=".",
+                                           type=pathlib.Path)
+        self.executeSubparser.add_argument("imagePath", help="Path to image training data.", type=pathlib.Path)
+        self.executeSubparser.add_argument("segmentationPath", help="Path to segmentation training data.",
+                                           type=pathlib.Path)
+
+        self.trainSubparser = subparsers.add_parser("train",
+                                                    help="Train the neural network from raw images and manual segmentations.")
 
         self.trainSubparser.add_argument("-A", "--augment", dest='doAugment', action='store_true',
                                          help="Augment training data.")

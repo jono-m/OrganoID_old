@@ -42,7 +42,7 @@ def FitModel(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Pa
         print("\tConverting segmentation " + str(segmentationindex + 1) + "/" + str(len(segmentations)))
         segmentations[segmentationindex] = np.array(segmentation.resize(imageSize).convert(mode="1"))
 
-    segmentations = np.moveaxis(np.stack(segmentations, axis=-1), -1, 0)
+    segmentations = np.expand_dims(np.moveaxis(np.stack(segmentations, axis=-1), -1, 0), -1)
 
     print("\tDone!")
 
@@ -115,7 +115,6 @@ def FitModel(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Pa
     print("\tSaving model...")
 
     modelJobSavePath = modelSavePath / ("OrganoID_model_" + jobID)
-    modelJobSavePath.mkdir(exist_ok=True)
 
     model.save(modelJobSavePath)
 
