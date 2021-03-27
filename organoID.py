@@ -9,5 +9,9 @@ if settings.GetMode() == "train":
     import training
 
     training.DoTraining(settings)
+elif settings.GetMode() == "run":
+    import run
+
+    run.DoRun(settings)
 
 print("Job complete.")

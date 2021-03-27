@@ -10,23 +10,12 @@ class JobSettings:
 
         subparsers = parser.add_subparsers(dest="subparser_name")
 
-        self.executeSubparser = subparsers.add_parser("execute", help="Training commands.")
+        self.trackingSubparser = subparsers.add_parser("run", help="Pipeline execution commands.")
 
-        self.executeSubparser.add_argument("-A", "--augment", dest='doAugment', action='store_true',
-                                           help="Augment training data.")
-        self.executeSubparser.add_argument("-B", "--batch", dest='batchSize', nargs='?', default=1,
-                                           help="Augment training data.", type=int)
-        self.executeSubparser.add_argument("-TS", "--testSplit", dest='testSplit', nargs='?', default=0.8,
-                                           help="Augment training data.", type=float)
-        self.executeSubparser.add_argument("-P", "--preprocess", dest='doPreprocess', action='store_true',
-                                           help="Preprocess training data.")
-        self.executeSubparser.add_argument("-F", "--fit", dest='doFit', action='store_true',
-                                           help="Fit model to training data.")
-        self.executeSubparser.add_argument("-M", "--modelPath", dest='modelPath', nargs='?', default=".",
-                                           type=pathlib.Path)
-        self.executeSubparser.add_argument("imagePath", help="Path to image training data.", type=pathlib.Path)
-        self.executeSubparser.add_argument("segmentationPath", help="Path to segmentation training data.",
-                                           type=pathlib.Path)
+        self.trackingSubparser.add_argument("modelPath", help="Path to trained OrganoID model", type=pathlib.Path)
+        self.trackingSubparser.add_argument("imagePath", help="Path to images to analyze.", type=pathlib.Path)
+        self.trackingSubparser.add_argument("outputPath", help="Path where analyzed images and data will be saved.",
+                                            type=pathlib.Path)
 
         self.trainSubparser = subparsers.add_parser("train",
                                                     help="Train the neural network from raw images and manual segmentations.")
@@ -41,8 +30,8 @@ class JobSettings:
                                          help="Preprocess training data.")
         self.trainSubparser.add_argument("-F", "--fit", dest='doFit', action='store_true',
                                          help="Fit model to training data.")
-        self.trainSubparser.add_argument("-M", "--modelPath", dest='modelPath', nargs='?', default=".",
-                                         type=pathlib.Path)
+        self.trainSubparser.add_argument("-M", "--outputPath", dest='outputPath', nargs='?', default=".",
+                                         type=pathlib.Path, help="Path where the trained model will be saved.")
         self.trainSubparser.add_argument("imagePath", help="Path to image training data.", type=pathlib.Path)
         self.trainSubparser.add_argument("segmentationPath", help="Path to segmentation training data.",
                                          type=pathlib.Path)
@@ -81,6 +70,9 @@ class JobSettings:
 
     def ModelPath(self) -> pathlib.Path:
         return self.args.modelPath.resolve()
+
+    def OutputPath(self) -> pathlib.Path:
+        return self.args.outputPath.resolve()
 
     def GetMode(self):
         return self.args.subparser_name

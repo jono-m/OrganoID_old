@@ -4,7 +4,7 @@ from SettingsParser import JobSettings
 def DoTraining(settings: JobSettings):
     trainingImagesPath = settings.ImagesPath()
     trainingSegmentationsPath = settings.SegmentationsPath()
-    modelSavePath = settings.ModelPath()
+    modelSavePath = settings.OutputPath()
 
     if settings.ShouldPreprocess():
         import preprocessing
