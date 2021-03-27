@@ -4,6 +4,8 @@ import re
 
 
 def AugmentImages(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Path, samplesToTake: int):
+    typesOfAugs = 9
+    samplesToTake = int(samplesToTake/typesOfAugs)
     print("-----------------------")
     print("Augmenting training data...")
     print("\tImages directory: " + str(trainingImagesPath))

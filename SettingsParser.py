@@ -20,14 +20,17 @@ class JobSettings:
         self.trainSubparser = subparsers.add_parser("train",
                                                     help="Train the neural network from raw images and manual segmentations.")
 
-        self.trainSubparser.add_argument("-A", "--augment", dest='doAugment', action='store_true',
-                                         help="Augment training data.")
+        self.trainSubparser.add_argument("-A", "--augment", dest='augmentSize', nargs='?', default=0,
+                                         help="Number of augmented images to produce (0 for no augmentation).", type=int)
         self.trainSubparser.add_argument("-B", "--batch", dest='batchSize', nargs='?', default=1,
-                                         help="Augment training data.", type=int)
+                                         help="Number of images to use for a single training pass.", type=int)
         self.trainSubparser.add_argument("-TS", "--testSplit", dest='testSplit', nargs='?', default=0.8,
-                                         help="Augment training data.", type=float)
+                                         help="Fraction of images to use for testing (0.0-1.0).", type=float)
         self.trainSubparser.add_argument("-P", "--preprocess", dest='doPreprocess', action='store_true',
+
                                          help="Preprocess training data.")
+        self.trainSubparser.add_argument("-E" "--epochs", dest='epochs', nargs='?', default=1,
+                                         help="Number of epochs to train with.", type=int)
         self.trainSubparser.add_argument("-F", "--fit", dest='doFit', action='store_true',
                                          help="Fit model to training data.")
         self.trainSubparser.add_argument("-M", "--outputPath", dest='outputPath', nargs='?', default=".",
@@ -43,6 +46,9 @@ class JobSettings:
     def ShouldPreprocess(self) -> bool:
         return self.args.doPreprocess
 
+    def Epochs(self) -> int:
+        return self.args.epochs
+
     def GetBatchSize(self) -> int:
         return self.args.batchSize
 
@@ -50,7 +56,10 @@ class JobSettings:
         return self.args.testSplit
 
     def ShouldAugment(self) -> bool:
-        return self.args.doAugment
+        return self.args.augmentSize > 0
+
+    def AugmentSize(self) -> int:
+        return self.args.augmentSize
 
     def ShouldFit(self):
         return self.args.doFit

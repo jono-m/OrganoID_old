@@ -17,9 +17,9 @@ def DoTraining(settings: JobSettings):
         trainingImagesPath, trainingSegmentationsPath = augmentation.AugmentImages(settings.jobID,
                                                                                    trainingImagesPath,
                                                                                    trainingSegmentationsPath,
-                                                                                   10)
+                                                                                   settings.AugmentSize())
 
     if settings.ShouldFit():
         import modelFitting
-        modelFitting.FitModel(settings.jobID, trainingImagesPath, trainingSegmentationsPath, modelSavePath, epochs=1,
+        modelFitting.FitModel(settings.jobID, trainingImagesPath, trainingSegmentationsPath, modelSavePath, epochs=settings.Epochs(),
                               test_size=settings.GetTestSplit(), patience=1, batch_size=settings.GetBatchSize())
