@@ -1,78 +1,45 @@
 import Augmentor
 from pathlib import Path
 import re
+import typing
 
 
-def AugmentImages(jobID: str, trainingImagesPath: Path, trainingSegmentationsPath: Path, samplesToTake: int):
-    typesOfAugs = 9
-    samplesToTake = int(samplesToTake/typesOfAugs)
+def AugmentImages(trainingImagesPath: Path, trainingSegmentationsPath: Path,
+                  outputPath: Path, samplesToTake: int,
+                  size: typing.Tuple[int, int]) -> typing.Tuple[Path, Path]:
     print("-----------------------")
     print("Augmenting training data...")
     print("\tImages directory: " + str(trainingImagesPath))
     print("\tSegmentations directory: " + str(trainingSegmentationsPath))
 
-    outputDirectory = 'OrganoID_aug_' + jobID
+    augmentor = Augmentor.Pipeline(source_directory=trainingImagesPath,
+                                   output_directory=outputPath)
+    augmentor.set_save_format("auto")
+    augmentor.ground_truth(trainingSegmentationsPath)
 
-    def PrepareAugmentor():
-        augmentor = Augmentor.Pipeline(source_directory=trainingImagesPath,
-                                       output_directory=outputDirectory)
-        augmentor.set_save_format("auto")
-        augmentor.ground_truth(trainingSegmentationsPath)
-        return augmentor
-
-    p = PrepareAugmentor()
-    p.rotate(probability=1, max_left_rotation=5, max_right_rotation=5)
-    p.crop_random(probability=1, percentage_area=0.9)
-    p.sample(samplesToTake)
-
-    p = PrepareAugmentor()
-    p.flip_left_right(probability=1)
-    p.sample(samplesToTake)
-
-    p = PrepareAugmentor()
-    p.zoom_random(probability=1, percentage_area=0.8)
-    p.sample(samplesToTake)
-
-    p = PrepareAugmentor()
-    p.zoom_random(probability=1, percentage_area=0.7)
-    p.sample(samplesToTake)
-
-    p = PrepareAugmentor()
-    p.flip_top_bottom(probability=1)
-    p.sample(samplesToTake)
-
-    p = PrepareAugmentor()
-    p.shear(probability=1, max_shear_left=14, max_shear_right=15)
-    p.random_distortion(probability=0.2, grid_width=5, grid_height=7, magnitude=3)
-    p.skew(probability=0.8, magnitude=0.4)
-    p.sample(samplesToTake)
-
-    p = PrepareAugmentor()
-    p.shear(probability=0.4, max_shear_left=14, max_shear_right=15)
-    p.random_distortion(probability=0.2, grid_width=5, grid_height=7, magnitude=3)
-    p.skew(probability=1, magnitude=0.4)
-    p.sample(samplesToTake)
-
-    p = PrepareAugmentor()
-    p.shear(probability=0.4, max_shear_left=14, max_shear_right=15)
-    p.random_distortion(probability=1, grid_width=5, grid_height=7, magnitude=3)
-    p.skew(probability=0.4, magnitude=0.4)
-    p.sample(samplesToTake)
-
-    p = PrepareAugmentor()
-    p.zoom(probability=1, min_factor=1.1, max_factor=1.4)
-    p.sample(samplesToTake)
-
-    trainingImagesAugmentedPath = trainingImagesPath / outputDirectory
-    trainingSegmentationsAugmentedPath = trainingSegmentationsPath.resolve() / outputDirectory
-    trainingSegmentationsAugmentedPath.mkdir(exist_ok=True)
-
-    results = list(trainingImagesAugmentedPath.glob("*.*"))
-    trainingSegmentationFiles = list(trainingImagesAugmentedPath.glob("_groundtruth*"))
-    trainingImageFiles = [x for x in results if x not in trainingSegmentationFiles]
+    augmentor.resize(1, size[0], size[1])
+    augmentor.greyscale(probability=1)
+    augmentor.rotate(probability=1, max_left_rotation=5, max_right_rotation=5)
+    augmentor.flip_left_right(probability=0.5)
+    augmentor.flip_top_bottom(probability=0.5)
+    augmentor.zoom_random(probability=0.5, percentage_area=0.3, randomise_percentage_area=True)
+    augmentor.shear(probability=0.5, max_shear_left=14, max_shear_right=15)
+    augmentor.random_distortion(probability=0.2, grid_width=5, grid_height=7, magnitude=3)
+    augmentor.skew(probability=0.8, magnitude=0.4)
+    augmentor.resize(1, size[0], size[1])
+    augmentor.sample(samplesToTake)
 
     print("\tDone!")
     print("\tReorganizing directory structure...")
+
+    trainingImagesAugmentedPath = outputPath / "images"
+    trainingImagesAugmentedPath.mkdir()
+    trainingSegmentationsAugmentedPath = outputPath / "segmentations"
+    trainingSegmentationsAugmentedPath.mkdir()
+
+    results = list(outputPath.glob("*.*"))
+    trainingSegmentationFiles = list(outputPath.glob("_groundtruth*"))
+    trainingImageFiles = [x for x in results if x not in trainingSegmentationFiles]
 
     for trainingSegmentationFile in trainingSegmentationFiles:
         newFilename = re.sub(".*_", "", trainingSegmentationFile.name)

@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 import datetime
+import typing
 
 
 class JobSettings:
@@ -21,20 +22,21 @@ class JobSettings:
                                                     help="Train the neural network from raw images and manual segmentations.")
 
         self.trainSubparser.add_argument("-A", "--augment", dest='augmentSize', nargs='?', default=0,
-                                         help="Number of augmented images to produce (0 for no augmentation).", type=int)
+                                         help="Number of augmented images to produce (0 for no augmentation).",
+                                         type=int)
         self.trainSubparser.add_argument("-B", "--batch", dest='batchSize', nargs='?', default=1,
                                          help="Number of images to use for a single training pass.", type=int)
         self.trainSubparser.add_argument("-TS", "--testSplit", dest='testSplit', nargs='?', default=0.8,
                                          help="Fraction of images to use for testing (0.0-1.0).", type=float)
-        self.trainSubparser.add_argument("-P", "--preprocess", dest='doPreprocess', action='store_true',
-
-                                         help="Preprocess training data.")
         self.trainSubparser.add_argument("-E" "--epochs", dest='epochs', nargs='?', default=1,
                                          help="Number of epochs to train with.", type=int)
+        self.trainSubparser.add_argument("-S" "--size", dest='size', nargs='*', default=[640, 640],
+                                         help="Size of input images (e.g. -S 640 640).", type=int)
         self.trainSubparser.add_argument("-F", "--fit", dest='doFit', action='store_true',
                                          help="Fit model to training data.")
-        self.trainSubparser.add_argument("-M", "--outputPath", dest='outputPath', nargs='?', default=".",
-                                         type=pathlib.Path, help="Path where the trained model will be saved.")
+        self.trainSubparser.add_argument("-O", "--outputPath", dest='outputPath', nargs='?', default=".",
+                                         type=pathlib.Path,
+                                         help="Path where the processed images and/or trained model will be saved.")
         self.trainSubparser.add_argument("imagePath", help="Path to image training data.", type=pathlib.Path)
         self.trainSubparser.add_argument("segmentationPath", help="Path to segmentation training data.",
                                          type=pathlib.Path)
@@ -42,9 +44,6 @@ class JobSettings:
         self.args = parser.parse_args()
 
         self.jobID = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-
-    def ShouldPreprocess(self) -> bool:
-        return self.args.doPreprocess
 
     def Epochs(self) -> int:
         return self.args.epochs
@@ -60,6 +59,9 @@ class JobSettings:
 
     def AugmentSize(self) -> int:
         return self.args.augmentSize
+
+    def GetSize(self) -> typing.Tuple[int, int]:
+        return self.args.size[0], self.args.size[1]
 
     def ShouldFit(self):
         return self.args.doFit
@@ -81,22 +83,7 @@ class JobSettings:
         return self.args.modelPath.resolve()
 
     def OutputPath(self) -> pathlib.Path:
-        return self.args.outputPath.resolve()
+        return self.args.outputPath.resolve() / ("OrganoID_" + self.jobID)
 
     def GetMode(self):
         return self.args.subparser_name
-
-    def __repr__(self):
-        return """
-        OrganoID settings:
-        -----
-        Preprocess: %s,
-        Augment: %s,
-        Images Path: %s,
-        Segmentations Path: %s,
-        Model Path: %s
-        """ % (self.ShouldPreprocess(),
-               self.ShouldAugment(),
-               self.ImagesPath(),
-               self.SegmentationsPath(),
-               self.ModelPath())
