@@ -1,2 +1,2 @@
 echo 'Starting
-python organoID.py train -A 10 -S 320 320 -B 8 -TS 0.2 -F -O C:/Users/jonoj/Documents/ML/Augmented C:/Users/jonoj/Documents/ML/2018Dec_originalX C:/Users/jonoj/Documents/ML/2018Dec_originalY
+python organoID.py train -A 10 -S 512 512 -B 8 -TS 0.2 -F -O C:/Users/jonoj/Documents/ML/Augmented C:/Users/jonoj/Documents/ML/2018Dec_originalX C:/Users/jonoj/Documents/ML/2018Dec_originalY
