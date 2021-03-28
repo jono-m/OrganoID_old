@@ -1,3 +1,5 @@
+print("Importing tensorflow...", flush=True)
+
 from tensorflow.keras.layers import Input, Lambda, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
@@ -9,6 +11,7 @@ from PIL import Image
 from pathlib import Path
 import typing
 
+print("Done! GPU status: " + str(tf.test.is_gpu_available()), flush=True)
 
 def MeanIoU(y_true, y_pred):
     return mean_iou(y_true, y_pred, 2)
@@ -107,14 +110,14 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     print("\tDone!")
 
     earlystopper = EarlyStopping(patience=patience, verbose=1)
-    print("\tFitting model...")
+    print("\tFitting model...", flush=True)
     model.fit(x=trainingImages, y=trainingSegmentations,
               validation_data=(testingImages, testingSegmentations),
               batch_size=batch_size,
               verbose=1,
               epochs=epochs,
               callbacks=[earlystopper])
-    print("\tDone!")
+    print("\tDone!", flush=True)
 
     print("\tSaving model...")
 
