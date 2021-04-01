@@ -1,4 +1,3 @@
-from datetime import datetime
 from SettingsParser import JobSettings
 
 settings = JobSettings()
@@ -13,5 +12,9 @@ elif settings.GetMode() == "run":
     import run
 
     run.DoRun(settings)
+elif settings.GetMode() == "augment":
+    import augmentation
+
+    augmentation.DoAugment(settings)
 
 print("Job complete.")

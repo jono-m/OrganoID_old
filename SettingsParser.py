@@ -18,12 +18,20 @@ class JobSettings:
         self.trackingSubparser.add_argument("outputPath", help="Path where analyzed images and data will be saved.",
                                             type=pathlib.Path)
 
+        self.augmentSubparser = subparsers.add_parser("augment",
+                                                      help="Augment images for training.")
+        self.augmentSubparser.add_argument("augmentCount", help="Number of augmented images to produce.", type=int)
+        self.augmentSubparser.add_argument("-O", "--outputPath", dest='outputPath', nargs='?', default=".",
+                                           type=pathlib.Path,
+                                           help="Path where the augmented images will be saved.")
+        self.augmentSubparser.add_argument("imagePath", help="Path to image training data.", type=pathlib.Path)
+        self.augmentSubparser.add_argument("segmentationPath", help="Path to segmentation training data.",
+                                           type=pathlib.Path)
+        self.augmentSubparser.add_argument("-S" "--size", dest='size', nargs='*', default=[640, 640],
+                                         help="Image size to output (e.g. -S 640 640).", type=int)
+
         self.trainSubparser = subparsers.add_parser("train",
                                                     help="Train the neural network from raw images and manual segmentations.")
-
-        self.trainSubparser.add_argument("-A", "--augment", dest='augmentSize', nargs='?', default=0,
-                                         help="Number of augmented images to produce (0 for no augmentation).",
-                                         type=int)
         self.trainSubparser.add_argument("-B", "--batch", dest='batchSize', nargs='?', default=1,
                                          help="Number of images to use for a single training pass.", type=int)
         self.trainSubparser.add_argument("-TS", "--testSplit", dest='testSplit', nargs='?', default=0.8,
@@ -32,11 +40,9 @@ class JobSettings:
                                          help="Number of epochs to train with.", type=int)
         self.trainSubparser.add_argument("-S" "--size", dest='size', nargs='*', default=[640, 640],
                                          help="Size of input images (e.g. -S 640 640).", type=int)
-        self.trainSubparser.add_argument("-F", "--fit", dest='doFit', action='store_true',
-                                         help="Fit model to training data.")
         self.trainSubparser.add_argument("-O", "--outputPath", dest='outputPath', nargs='?', default=".",
                                          type=pathlib.Path,
-                                         help="Path where the processed images and/or trained model will be saved.")
+                                         help="Path where the trained model will be saved.")
         self.trainSubparser.add_argument("imagePath", help="Path to image training data.", type=pathlib.Path)
         self.trainSubparser.add_argument("segmentationPath", help="Path to segmentation training data.",
                                          type=pathlib.Path)
@@ -54,17 +60,11 @@ class JobSettings:
     def GetTestSplit(self) -> float:
         return self.args.testSplit
 
-    def ShouldAugment(self) -> bool:
-        return self.args.augmentSize > 0
-
-    def AugmentSize(self) -> int:
-        return self.args.augmentSize
+    def AugmentCount(self) -> int:
+        return self.args.augmentCount
 
     def GetSize(self) -> typing.Tuple[int, int]:
         return self.args.size[0], self.args.size[1]
-
-    def ShouldFit(self):
-        return self.args.doFit
 
     def ImagesPath(self) -> pathlib.Path:
         if not self.args.imagePath.is_dir():
@@ -83,7 +83,7 @@ class JobSettings:
         return self.args.modelPath.resolve()
 
     def OutputPath(self) -> pathlib.Path:
-        return self.args.outputPath.resolve() / ("OrganoID_" + self.jobID)
+        return self.args.outputPath.resolve() / ("OrganoID_" + self.GetMode() + "_" + self.jobID)
 
     def GetMode(self):
         return self.args.subparser_name
