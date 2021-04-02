@@ -1,2 +1,0 @@
-echo 'Starting'
-python organoID.py run C:/Users/jonoj/Repositories/OrganoID/OrganoID_model_2021_03_22_19_37_30 C:/Users/jonoj/Documents/ML/2018Dec_originalX C:/Users/jonoj/Documents/ML/SegmentedImages/
