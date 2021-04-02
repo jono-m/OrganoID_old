@@ -6,10 +6,16 @@ import typing
 
 
 def DoAugment(settings: SettingsParser):
-    settings.OutputPath().mkdir()
+    Augment(settings.OutputPath(),
+            settings.ImagesPath(),
+            settings.SegmentationsPath(),
+            settings.GetSize(),
+            settings.AugmentCount())
 
-    trainingImagesPath = settings.ImagesPath()
-    trainingSegmentationsPath = settings.SegmentationsPath()
+
+def Augment(outputPath: Path, trainingImagesPath: Path, trainingSegmentationsPath: Path, size: typing.Tuple[int, int],
+            augmentCount: int):
+    outputPath.mkdir()
 
     print("-----------------------")
     print("Augmenting training data...")
@@ -17,11 +23,9 @@ def DoAugment(settings: SettingsParser):
     print("\tSegmentations directory: " + str(trainingSegmentationsPath))
 
     augmentor = Augmentor.Pipeline(source_directory=trainingImagesPath,
-                                   output_directory=settings.OutputPath())
+                                   output_directory=outputPath)
     augmentor.set_save_format("auto")
     augmentor.ground_truth(trainingSegmentationsPath)
-
-    size = settings.GetSize()
 
     augmentor.resize(1, size[0], size[1])
     augmentor.rotate(probability=1, max_left_rotation=5, max_right_rotation=5)
@@ -33,18 +37,18 @@ def DoAugment(settings: SettingsParser):
     augmentor.skew(probability=0.8, magnitude=0.4)
     augmentor.resize(1, size[0], size[1])
 
-    augmentor.sample(settings.AugmentCount())
+    augmentor.sample(augmentCount)
 
     print("\tDone!")
     print("\tReorganizing directory structure...")
 
-    trainingImagesAugmentedPath = settings.OutputPath() / "images"
+    trainingImagesAugmentedPath = outputPath / "images"
     trainingImagesAugmentedPath.mkdir()
-    trainingSegmentationsAugmentedPath = settings.OutputPath() / "segmentations"
+    trainingSegmentationsAugmentedPath = outputPath / "segmentations"
     trainingSegmentationsAugmentedPath.mkdir()
 
-    results = list(settings.OutputPath().glob("*.*"))
-    trainingSegmentationFiles = list(settings.OutputPath().glob("_groundtruth*"))
+    results = list(outputPath.glob("*.*"))
+    trainingSegmentationFiles = list(outputPath.glob("_groundtruth*"))
     trainingImageFiles = [x for x in results if x not in trainingSegmentationFiles]
 
     for trainingSegmentationFile in trainingSegmentationFiles:

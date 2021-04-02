@@ -3,7 +3,6 @@
 #SBATCH --time=00:30:00
 #SBATCH --partition=broadwl
 #SBATCH --chdir=/home/jono/Repositories/OrganoID
-#SBATCH --mem=4G
 
 
 echo 'Starting batch job...'

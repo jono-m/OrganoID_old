@@ -1,5 +1,5 @@
 from pathlib import Path
-from tensorflow import keras
+import tensorflow as tf
 from PIL import Image
 import numpy as np
 
@@ -12,7 +12,7 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path):
     print("\tOutput directory: " + str(outputPath))
 
     print("\tLoading model.")
-    model = keras.models.load_model(modelPath)
+    model = tf.keras.models.load_model(modelPath)
     print("\tDone.")
 
     print("\tLoading images.")
