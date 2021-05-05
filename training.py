@@ -159,7 +159,8 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
               validation_data=ImagesLoader(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
               verbose=1,
               epochs=epochs,
-              steps_per_epoch=int(len(trainingImagePaths)/batch_size),
+              steps_per_epoch=int(len(trainingImagePaths) / batch_size),
+              validation_steps=int(len(testingImagePaths) / batch_size),
               callbacks=[earlystopper])
     print("\tDone!", flush=True)
 
