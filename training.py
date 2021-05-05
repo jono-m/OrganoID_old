@@ -29,6 +29,43 @@ def DoTraining(settings: JobSettings):
              batch_size=settings.GetBatchSize(), imageSize=settings.GetSize())
 
 
+def LoadImages(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
+    images = [Image.open(imagePath) for imagePath in filenames]
+    for imageIndex, image in enumerate(images):
+        images[imageIndex] = np.array(image.resize(imageSize).convert(mode="RGB"))
+    images = np.moveaxis(np.stack(images, axis=-1), -1, 0)
+    return images
+
+
+def LoadSegmentations(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
+    segmentations = [Image.open(segmentationPath) for segmentationPath in filenames]
+    for segmentationIndex, segmentation in enumerate(segmentations):
+        segmentations[segmentationIndex] = np.array(segmentation.resize(imageSize).convert(mode="1"))
+
+    segmentations = np.moveaxis(np.stack(segmentations, axis=-1), -1, 0).astype(int)
+    return segmentations
+
+
+def ImagesLoader(imageFileNames: typing.List[Path], segmentationFileNames: typing.List[Path],
+                 imageSize: typing.Tuple[int, int], batchSize: int):
+    L = len(imageFileNames)
+
+    # this line is just to make the generator infinite, keras needs that
+    while True:
+        batchStart = 0
+        batchEnd = batchSize
+
+        while batchStart < L:
+            limit = min(batchEnd, L)
+            X = LoadImages(imageFileNames[batchStart:limit, imageSize])
+            Y = LoadSegmentations(segmentationFileNames[batchStart:limit, imageSize])
+
+            yield X, Y  # a tuple with two numpy arrays with batch_size samples
+
+            batchStart += batchSize
+            batchEnd += batchSize
+
+
 def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPath: Path, epochs: int,
              test_size=0.5, batch_size=1, patience=5, imageSize: typing.Tuple[int, int] = (640, 640), numImages=-1,
              dropout_rate=0.1, learning_rate=0.001):
@@ -40,34 +77,19 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     print("\tSegmentations directory: " + str(trainingSegmentationsPath))
     print("\tModel directory: " + str(outputPath))
 
-    print("\tLoading images...")
-    images = [Image.open(imagePath) for imagePath in sorted(trainingImagesPath.iterdir()) if imagePath.is_file()]
-    images = images[:numImages]
-
-    segmentations = [Image.open(segmentationPath) for segmentationPath in sorted(trainingSegmentationsPath.iterdir())
-                     if segmentationPath.is_file()]
-    segmentations = segmentations[:numImages]
+    imagePaths = [imagePath for imagePath in sorted(trainingImagesPath.iterdir()) if imagePath.is_file()]
+    imagePaths = imagePaths[:numImages]
+    segmentationPaths = [segmentationPath for segmentationPath in sorted(trainingSegmentationsPath.iterdir())
+                         if segmentationPath.is_file()]
+    segmentationPaths = segmentationPaths[:numImages]
 
     print("\tDone.")
 
-    print("\tConverting " + str(len(images)) + " images.")
-    for imageIndex, image in enumerate(images):
-        images[imageIndex] = np.array(image.resize(imageSize).convert(mode="RGB"))
-    images = np.moveaxis(np.stack(images, axis=-1), -1, 0)
-    print("\tDone!")
-
-    print("\tConverting " + str(len(segmentations)) + " segmentations.")
-    for segmentationIndex, segmentation in enumerate(segmentations):
-        segmentations[segmentationIndex] = np.array(segmentation.resize(imageSize).convert(mode="1"))
-
-    segmentations = np.moveaxis(np.stack(segmentations, axis=-1), -1, 0).astype(int)
-
-    print("\tDone!")
-
     print("\tSplitting training and testing datasets (" + str(test_size * 100) + "% for testing)...")
-    trainingImages, testingImages, trainingSegmentations, testingSegmentations = train_test_split(images,
-                                                                                                  segmentations,
-                                                                                                  test_size=test_size)
+    trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(
+        imagePaths,
+        segmentationPaths,
+        test_size=test_size)
 
     print("\tDone!")
 
@@ -133,9 +155,8 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
 
     earlystopper = EarlyStopping(patience=patience, verbose=1)
     print("\tFitting model...", flush=True)
-    model.fit(x=trainingImages, y=trainingSegmentations,
-              validation_data=(testingImages, testingSegmentations),
-              batch_size=batch_size,
+    model.fit(ImagesLoader(trainingImagePaths, trainingSegmentationPaths, imageSize, batch_size),
+              validation_data=ImagesLoader(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
               verbose=1,
               epochs=epochs,
               callbacks=[earlystopper])
