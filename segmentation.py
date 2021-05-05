@@ -22,7 +22,7 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path):
     print("\tDone.")
     imageSize = images[0].size
 
-    outputPath.mkdir(exist_ok=True)
+    outputPath.mkdir(parents=True, exist_ok=True)
 
     for imageIndex, image in enumerate(images):
         print("\tConverting image " + str(imageIndex + 1) + "/" + str(len(images)))

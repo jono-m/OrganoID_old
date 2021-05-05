@@ -15,7 +15,7 @@ def DoAugment(settings: SettingsParser):
 
 def Augment(outputPath: Path, trainingImagesPath: Path, trainingSegmentationsPath: Path, size: typing.Tuple[int, int],
             augmentCount: int):
-    outputPath.mkdir()
+    outputPath.mkdir(parents=True, exist_ok=True)
 
     print("-----------------------")
     print("Augmenting training data...")
@@ -43,9 +43,9 @@ def Augment(outputPath: Path, trainingImagesPath: Path, trainingSegmentationsPat
     print("\tReorganizing directory structure...")
 
     trainingImagesAugmentedPath = outputPath / "images"
-    trainingImagesAugmentedPath.mkdir()
+    trainingImagesAugmentedPath.mkdir(parents=True, exist_ok=True)
     trainingSegmentationsAugmentedPath = outputPath / "segmentations"
-    trainingSegmentationsAugmentedPath.mkdir()
+    trainingSegmentationsAugmentedPath.mkdir(parents=True, exist_ok=True)
 
     results = list(outputPath.glob("*.*"))
     trainingSegmentationFiles = list(outputPath.glob("_groundtruth*"))

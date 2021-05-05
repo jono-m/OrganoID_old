@@ -32,7 +32,7 @@ def DoTraining(settings: JobSettings):
 def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPath: Path, epochs: int,
              test_size=0.5, batch_size=1, patience=5, imageSize: typing.Tuple[int, int] = (640, 640), numImages=-1,
              dropout_rate=0.1, learning_rate=0.001):
-    outputPath.mkdir(exist_ok=True)
+    outputPath.mkdir(parents=True, exist_ok=True)
 
     print("-----------------------")
     print("Building model...")
