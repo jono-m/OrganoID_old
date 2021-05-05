@@ -28,7 +28,7 @@ class JobSettings:
         self.augmentSubparser.add_argument("segmentationPath", help="Path to segmentation training data.",
                                            type=pathlib.Path)
         self.augmentSubparser.add_argument("-S" "--size", dest='size', nargs='*', default=[640, 640],
-                                         help="Image size to output (e.g. -S 640 640).", type=int)
+                                           help="Image size to output (e.g. -S 640 640).", type=int)
 
         self.trainSubparser = subparsers.add_parser("train",
                                                     help="Train the neural network from raw images and manual segmentations.")

@@ -57,8 +57,8 @@ def ImagesLoader(imageFileNames: typing.List[Path], segmentationFileNames: typin
 
         while batchStart < L:
             limit = min(batchEnd, L)
-            X = LoadImages(imageFileNames[batchStart:limit, imageSize])
-            Y = LoadSegmentations(segmentationFileNames[batchStart:limit, imageSize])
+            X = LoadImages(imageFileNames[batchStart:limit], imageSize)
+            Y = LoadSegmentations(segmentationFileNames[batchStart:limit], imageSize)
 
             yield X, Y  # a tuple with two numpy arrays with batch_size samples
 
