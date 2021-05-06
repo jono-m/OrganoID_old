@@ -10,6 +10,7 @@
 
 echo 'Starting batch job...'
 echo 'Loading Conda module...'
-module load tensorflow/2.1
+module load python
+conda activate /home/jono/ML/Environments/OrganoID
 echo 'Executing python script...'
 python organoID.py train -S 512 512 -B 16 -TS 0.2 -E 20 -O /home/jono/ML/Models /home/jono/ML/TrainData/OrganoID_augment_2021_05_05_17_45_41/images /home/jono/ML/TrainData/OrganoID_augment_2021_05_05_17_45_41/segmentations

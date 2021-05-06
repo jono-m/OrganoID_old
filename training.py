@@ -51,12 +51,12 @@ class RealTimeCallback(Callback):
 
     def Rewrite(self):
         with open(self.path, "wb") as file:
-            dill.dump(file, self.data)
+            dill.dump(self.data, file)
 
 
 class MyMeanIOU(tf.keras.metrics.MeanIoU):
     def __init__(self, threshold):
-        super().__init__(num_classes=2, name="MeanIOU_" + str(threshold))
+        super().__init__(num_classes=2, name="MeanIOU")
         self.threshold = threshold
 
     def update_state(self, y_true, y_pred, sample_weight=None):
@@ -196,6 +196,7 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
 
     batches = int(len(trainingImagePaths) / batch_size)
     earlystopper = EarlyStopping(patience=patience, verbose=1)
+    outputPath.mkdir(parents=True, exist_ok=True)
     realTime = RealTimeCallback(outputPath / "log.pkl", batches)
     print("\tFitting model...", flush=True)
     model.fit(ImagesLoader(trainingImagePaths, trainingSegmentationPaths, imageSize, batch_size),
@@ -209,7 +210,6 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
 
     print("\tSaving model...")
 
-    outputPath.mkdir(parents=True, exist_ok=True)
 
     modelJobSavePath = outputPath / "trainedModel"
 
