@@ -3,12 +3,14 @@ from SettingsParser import JobSettings
 import dill
 from realTimeData import RealTimeData
 from pathlib import Path
+import time
 
 
 def DoMonitor(settings: JobSettings):
     plotter = Plotter(settings.GetLogPath())
     while True:
         plotter.Tick()
+        time.sleep(1.0)
 
 
 class Plotter:
@@ -16,7 +18,8 @@ class Plotter:
         self.path = path
 
         self._lastLoadTime = -1
-        self.data = self.Reload()
+        self.data = RealTimeData(1)
+        self.Reload()
 
         plt.ion()
 
@@ -24,13 +27,13 @@ class Plotter:
 
         self.accuracyPlot = plt.subplot(1, 3, 2)
 
-        self.iouPlot = plt.subplot(1, 3, 2)
+        self.iouPlot = plt.subplot(1, 3, 3)
 
         self.Redraw()
 
     def Tick(self):
         if self.path.stat().st_mtime > self._lastLoadTime:
-            self.data = self.Reload()
+            self.Reload()
             self.Redraw()
 
     def Redraw(self):
@@ -46,16 +49,19 @@ class Plotter:
                 width = 1
                 alpha = 0.5
 
-            [plot.plot(points, [epoch.losses, epoch.accuracies, epoch.meanIOUs][i], linewidth=width, alpha=alpha) for
+            [plot.plot(range(points), [epoch.losses, epoch.accuracies, epoch.meanIOUs][i], linewidth=width, alpha=alpha)
+             for
              (i, plot) in enumerate(plots)]
 
         [plot.set_xlim(0, self.data.batchesPerEpoch) for plot in plots]
         [plot.set_xlabel("Batch Number") for plot in plots]
         [plot.set_title(["Loss", "Accuracy", "Mean IOU"][i]) for (i, plot) in enumerate(plots)]
-        [plot.set_ylim(0, plot.get_ylim[1]) for plot in plots]
+        [plot.set_ylim(0, plot.get_ylim()[1]) for plot in plots]
 
     def Reload(self):
-        with open(self.path, "rb") as file:
-            data: RealTimeData = dill.load(file)
+        try:
+            with open(self.path, "rb") as file:
+                self.data = dill.load(file)
+        except Exception as e:
+            print(e)
         self._lastLoadTime = self.path.stat().st_mtime
-        return data
