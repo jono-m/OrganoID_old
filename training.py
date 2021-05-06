@@ -14,20 +14,7 @@ from pathlib import Path
 import typing
 
 import dill
-
-import sys
-
-
-class RealTimeData:
-    class EpochData:
-        def __init__(self):
-            self.losses = []
-            self.accuracies = []
-            self.meanIOUs = []
-
-    def __init__(self, batches: int):
-        self.batchesPerEpoch = batches
-        self.epochs: typing.List[RealTimeData.EpochData] = []
+from realTimeData import RealTimeData
 
 
 class RealTimeCallback(Callback):
@@ -111,7 +98,6 @@ def ImagesLoader(imageFileNames: typing.List[Path], segmentationFileNames: typin
 def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPath: Path, epochs: int,
              test_size=0.5, batch_size=1, patience=5, imageSize: typing.Tuple[int, int] = (640, 640), numImages=-1,
              dropout_rate=0.1, learning_rate=0.001):
-
     print("-----------------------")
     print("Building model...")
     print("\tImages directory: " + str(trainingImagesPath))

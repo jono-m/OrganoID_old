@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 from SettingsParser import JobSettings
-from training import RealTimeData
 import dill
-import typing
+from realTimeData import RealTimeData
 from pathlib import Path
 
 
