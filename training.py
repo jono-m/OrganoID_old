@@ -168,7 +168,7 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
 
     modelJobSavePath = outputPath / "trainedModel"
 
-    model.save(modelJobSavePath)
+    model.save(str(modelJobSavePath.absolute()))
 
     results = modelJobSavePath
     print("Model saved to " + str(results))
