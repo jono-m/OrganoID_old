@@ -111,7 +111,6 @@ def ImagesLoader(imageFileNames: typing.List[Path], segmentationFileNames: typin
 def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPath: Path, epochs: int,
              test_size=0.5, batch_size=1, patience=5, imageSize: typing.Tuple[int, int] = (640, 640), numImages=-1,
              dropout_rate=0.1, learning_rate=0.001):
-    outputPath.mkdir(parents=True, exist_ok=True)
 
     print("-----------------------")
     print("Building model...")
@@ -210,9 +209,11 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
 
     print("\tSaving model...")
 
+    outputPath.mkdir(parents=True, exist_ok=True)
+
     modelJobSavePath = outputPath / "trainedModel"
 
-    model.save(modelJobSavePath)
+    model.save(str(modelJobSavePath.absolute()))
 
     results = modelJobSavePath
     print("Model saved to " + str(results))
