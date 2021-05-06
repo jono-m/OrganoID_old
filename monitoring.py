@@ -10,7 +10,7 @@ def DoMonitor(settings: JobSettings):
     plotter = Plotter(settings.GetLogPath())
     while True:
         plotter.Tick()
-        time.sleep(1.0)
+        plt.pause(0.5)
 
 
 class Plotter:
@@ -56,7 +56,9 @@ class Plotter:
         [plot.set_xlim(0, self.data.batchesPerEpoch) for plot in plots]
         [plot.set_xlabel("Batch Number") for plot in plots]
         [plot.set_title(["Loss", "Accuracy", "Mean IOU"][i]) for (i, plot) in enumerate(plots)]
-        [plot.set_ylim(0, plot.get_ylim()[1]) for plot in plots]
+        self.lossPlot.set_ylim(0, self.lossPlot.get_ylim()[1])
+        self.accuracyPlot.set_ylim(0, 1)
+        self.iouPlot.set_ylim(0, 1)
 
     def Reload(self):
         try:
