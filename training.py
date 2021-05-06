@@ -16,10 +16,13 @@ import sys
 
 
 class MyMeanIOU(tf.keras.metrics.MeanIoU):
+    def __init__(self, threshold):
+        super().__init__(num_classes=2, name="MeanIOU_" + str(threshold))
+        self.threshold = threshold
+
     def update_state(self, y_true, y_pred, sample_weight=None):
-        threshold = 0.5
         formattedTrue = tf.cast(y_true, tf.uint8)
-        formattedPredictions = tf.cast(tf.math.greater_equal(y_pred, threshold), tf.uint8),
+        formattedPredictions = tf.cast(tf.math.greater_equal(y_pred, self.threshold), tf.uint8),
         return super().update_state(formattedTrue, formattedPredictions, sample_weight)
 
 
@@ -148,7 +151,7 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
 
     model = Model(inputs=[inputs], outputs=[outputs])
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss='binary_crossentropy',
-                  metrics=['accuracy', MyMeanIOU(num_classes=2)])
+                  metrics=['accuracy'] + [MyMeanIOU(threshold) for threshold in list(np.arange(0, 1, 0.1))])
     model.summary()
     print("\tRequired memory: " + str(keras_model_memory_usage_in_bytes(model, batch_size=batch_size)))
     print("\tDone!")
