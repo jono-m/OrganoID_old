@@ -3,7 +3,7 @@ from SettingsParser import JobSettings
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
 from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, Callback
 
 import numpy as np
 from PIL import Image
@@ -12,7 +12,46 @@ from sklearn.model_selection import train_test_split
 
 from pathlib import Path
 import typing
+
+import dill
+
 import sys
+
+
+class RealTimeData:
+    class EpochData:
+        def __init__(self):
+            self.losses = []
+            self.accuracies = []
+            self.meanIOUs = []
+
+    def __init__(self, batches: int):
+        self.batchesPerEpoch = batches
+        self.epochs: typing.List[RealTimeData.EpochData] = []
+
+
+class RealTimeCallback(Callback):
+    def __init__(self, path: Path, totalBatches: int):
+        super().__init__()
+        self.path = path
+
+        self.totalBatches = totalBatches
+        self.data = RealTimeData(totalBatches)
+
+    def on_train_batch_end(self, batch, logs=None):
+        current = self.data.epochs[-1]
+        current.losses.append(logs['loss'])
+        current.accuracies.append(logs['accuracy'])
+        current.meanIOUs.append(logs['MeanIOU'])
+        self.Rewrite()
+
+    def on_epoch_begin(self, epoch, logs=None):
+        self.data.epochs.append(RealTimeData.EpochData())
+        self.Rewrite()
+
+    def Rewrite(self):
+        with open(self.path, "wb") as file:
+            dill.dump(file, self.data)
 
 
 class MyMeanIOU(tf.keras.metrics.MeanIoU):
@@ -151,20 +190,22 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
 
     model = Model(inputs=[inputs], outputs=[outputs])
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss='binary_crossentropy',
-                  metrics=['accuracy'] + [MyMeanIOU(threshold) for threshold in list(np.arange(0, 1, 0.1))])
+                  metrics=['accuracy', MyMeanIOU(0.5)])
     model.summary()
     print("\tRequired memory: " + str(keras_model_memory_usage_in_bytes(model, batch_size=batch_size)))
     print("\tDone!")
 
+    batches = int(len(trainingImagePaths) / batch_size)
     earlystopper = EarlyStopping(patience=patience, verbose=1)
+    realTime = RealTimeCallback(outputPath / "log.pkl", batches)
     print("\tFitting model...", flush=True)
     model.fit(ImagesLoader(trainingImagePaths, trainingSegmentationPaths, imageSize, batch_size),
               validation_data=ImagesLoader(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
               verbose=1,
               epochs=epochs,
-              steps_per_epoch=int(len(trainingImagePaths) / batch_size),
+              steps_per_epoch=batches,
               validation_steps=int(len(testingImagePaths) / batch_size),
-              callbacks=[earlystopper])
+              callbacks=[earlystopper, realTime])
     print("\tDone!", flush=True)
 
     print("\tSaving model...")

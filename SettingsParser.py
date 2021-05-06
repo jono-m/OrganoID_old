@@ -18,6 +18,10 @@ class JobSettings:
         self.trackingSubparser.add_argument("outputPath", help="Path where analyzed images and data will be saved.",
                                             type=pathlib.Path)
 
+        self.monitoringSubParser = subparsers.add_parser("monitor", help="Pipeline monitoring commands.")
+
+        self.monitoringSubParser.add_argument("logPath", help="Path to log file.", type=pathlib.Path)
+
         self.augmentSubparser = subparsers.add_parser("augment",
                                                       help="Augment images for training.")
         self.augmentSubparser.add_argument("augmentCount", help="Number of augmented images to produce.", type=int)
@@ -65,6 +69,9 @@ class JobSettings:
 
     def GetSize(self) -> typing.Tuple[int, int]:
         return self.args.size[0], self.args.size[1]
+
+    def GetLogPath(self):
+        return self.args.logPath
 
     def ImagesPath(self) -> pathlib.Path:
         if not self.args.imagePath.is_dir():
