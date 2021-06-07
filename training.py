@@ -26,6 +26,8 @@ class RealTimeCallback(Callback):
         self.data = RealTimeData(totalBatches)
 
     def on_train_batch_end(self, batch, logs=None):
+        if not logs or 'loss' not in logs:
+            return
         current = self.data.epochs[-1]
         current.losses.append(logs['loss'])
         current.accuracies.append(logs['accuracy'])
@@ -54,7 +56,7 @@ class MyMeanIOU(tf.keras.metrics.MeanIoU):
 
 def DoTraining(settings: JobSettings):
     FitModel(settings.ImagesPath(), settings.SegmentationsPath(), settings.OutputPath(),
-             epochs=settings.Epochs(), test_size=settings.GetTestSplit(), patience=1,
+             epochs=settings.Epochs(), test_size=settings.GetTestSplit(), patience=5,
              batch_size=settings.GetBatchSize(), imageSize=settings.GetSize(), dropout_rate=settings.GetDropoutRate())
 
 
@@ -113,10 +115,14 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     print("\tDone.")
 
     print("\tSplitting training and testing datasets (" + str(test_size * 100) + "% for testing)...")
-    trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(
-        imagePaths,
-        segmentationPaths,
-        test_size=test_size)
+    if test_size == 0:
+        trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = \
+            imagePaths, imagePaths, segmentationPaths, segmentationPaths
+    else:
+        trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(
+            imagePaths,
+            segmentationPaths,
+            test_size=test_size)
 
     print("\tDone!")
 
@@ -181,7 +187,7 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     print("\tDone!")
 
     batches = int(len(trainingImagePaths) / batch_size)
-    earlystopper = EarlyStopping(patience=patience, verbose=1)
+    # earlystopper = EarlyStopping(patience=patience, verbose=1)
     outputPath.mkdir(parents=True, exist_ok=True)
     realTime = RealTimeCallback(outputPath / "log.pkl", batches)
     print("\tFitting model...", flush=True)
@@ -191,11 +197,10 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
               epochs=epochs,
               steps_per_epoch=batches,
               validation_steps=int(len(testingImagePaths) / batch_size),
-              callbacks=[earlystopper, realTime])
+              callbacks=[realTime])
     print("\tDone!", flush=True)
 
     print("\tSaving model...")
-
 
     modelJobSavePath = outputPath / "trainedModel"
 
