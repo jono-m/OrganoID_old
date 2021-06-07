@@ -42,6 +42,8 @@ class JobSettings:
                                          help="Fraction of images to use for testing (0.0-1.0).", type=float)
         self.trainSubparser.add_argument("-E" "--epochs", dest='epochs', nargs='?', default=1,
                                          help="Number of epochs to train with.", type=int)
+        self.trainSubparser.add_argument("-DR" "--dropoutRate", dest='dropoutRate', nargs='?', default=0.2,
+                                         help="Dropout rate of CNN during training.", type=float)
         self.trainSubparser.add_argument("-S" "--size", dest='size', nargs='*', default=[640, 640],
                                          help="Size of input images (e.g. -S 640 640).", type=int)
         self.trainSubparser.add_argument("-O", "--outputPath", dest='outputPath', nargs='?', default=".",
@@ -69,6 +71,9 @@ class JobSettings:
 
     def GetSize(self) -> typing.Tuple[int, int]:
         return self.args.size[0], self.args.size[1]
+
+    def GetDropoutRate(self) -> float:
+        return self.args.dropoutRate
 
     def GetLogPath(self):
         return self.args.logPath
