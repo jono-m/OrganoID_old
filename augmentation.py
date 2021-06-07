@@ -31,10 +31,10 @@ def Augment(outputPath: Path, trainingImagesPath: Path, trainingSegmentationsPat
     augmentor.rotate(probability=1, max_left_rotation=5, max_right_rotation=5)
     augmentor.flip_left_right(probability=0.5)
     augmentor.flip_top_bottom(probability=0.5)
-    augmentor.zoom_random(percentage_area=0.7)
+    augmentor.zoom_random(probability=0.5, percentage_area=0.9)
     augmentor.shear(probability=1, max_shear_left=15, max_shear_right=15)
     augmentor.random_distortion(probability=0.5, grid_width=5, grid_height=5, magnitude=3)
-    augmentor.skew(probability=0.5g, magnitude=0.3)
+    augmentor.skew(probability=0.5, magnitude=0.3)
     augmentor.resize(1, size[0], size[1])
 
     augmentor.sample(augmentCount)
