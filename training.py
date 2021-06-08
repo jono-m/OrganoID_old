@@ -1,7 +1,7 @@
 from SettingsParser import JobSettings
 
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
+from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate, Reshape
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, Callback
 
@@ -13,8 +13,18 @@ from sklearn.model_selection import train_test_split
 from pathlib import Path
 import typing
 
+import traceback
+
 import dill
 from realTimeData import RealTimeData
+
+import os
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
+
+# for gpu in tf.config.list_physical_devices('GPU'):
+#     tf.config.experimental.set_memory_growth(gpu, True)
 
 
 class RealTimeCallback(Callback):
@@ -61,14 +71,18 @@ def DoTraining(settings: JobSettings):
 
 
 def LoadImages(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
+    print("Load image " + str(filenames))
     images = [Image.open(imagePath) for imagePath in filenames]
     for imageIndex, image in enumerate(images):
-        images[imageIndex] = np.array(image.resize(imageSize).convert(mode="RGB"))
-    images = np.moveaxis(np.stack(images, axis=-1), -1, 0)
+        if image.mode == 'I':
+            image = image.point(lambda x: x * (1 / 255))
+        images[imageIndex] = np.array(image.resize(imageSize).convert(mode="L"))
+    images = np.expand_dims(np.moveaxis(np.stack(images, axis=-1), -1, 0), axis=-1)
     return images
 
 
 def LoadSegmentations(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
+    print("Load segmentation " + str(filenames))
     segmentations = [Image.open(segmentationPath) for segmentationPath in filenames]
     for segmentationIndex, segmentation in enumerate(segmentations):
         segmentations[segmentationIndex] = np.array(segmentation.resize(imageSize).convert(mode="1"))
@@ -127,61 +141,62 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     print("\tDone!")
 
     print("\tBuilding model pipeline...")
-    inputs = Input((imageSize[0], imageSize[1], 3))
+    inputs = Input((imageSize[0], imageSize[1], 1))
 
-    c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(inputs)
-    #c1 = Dropout(dropout_rate)(c1)
-    c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c1)
+    c1 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(inputs)
+    # c1 = Dropout(dropout_rate)(c1)
+    c1 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c1)
 
     p1 = MaxPooling2D((2, 2))(c1)
-    c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p1)
-    #c2 = Dropout(dropout_rate)(c2)
-    c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c2)
+    c2 = Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p1)
+    # c2 = Dropout(dropout_rate)(c2)
+    c2 = Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c2)
 
     p2 = MaxPooling2D((2, 2))(c2)
-    c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p2)
-    #c3 = Dropout(dropout_rate)(c3)
-    c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c3)
+    c3 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p2)
+    # c3 = Dropout(dropout_rate)(c3)
+    c3 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c3)
 
     p3 = MaxPooling2D((2, 2))(c3)
-    c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p3)
-    #c4 = Dropout(dropout_rate)(c4)
-    c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c4)
+    c4 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p3)
+    # c4 = Dropout(dropout_rate)(c4)
+    c4 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c4)
 
     p4 = MaxPooling2D(pool_size=(2, 2))(c4)
-    c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p4)
-    #c5 = Dropout(dropout_rate)(c5)
-    c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c5)
+    c5 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p4)
+    # c5 = Dropout(dropout_rate)(c5)
+    c5 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c5)
 
-    u6 = Conv2DTranspose(512, (2, 2), strides=(2, 2), padding='same')(c5)
+    u6 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c5)
     u6 = concatenate([u6, c4])
-    c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u6)
-    #c6 = Dropout(dropout_rate)(c6)
-    c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c6)
+    c6 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u6)
+    # c6 = Dropout(dropout_rate)(c6)
+    c6 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c6)
 
-    u7 = Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same')(c6)
+    u7 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(c6)
     u7 = concatenate([u7, c3])
-    c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u7)
-    #c7 = Dropout(dropout_rate)(c7)
-    c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c7)
+    c7 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u7)
+    # c7 = Dropout(dropout_rate)(c7)
+    c7 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c7)
 
-    u8 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c7)
+    u8 = Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(c7)
     u8 = concatenate([u8, c2])
-    c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u8)
+    c8 = Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u8)
     # c8 = Dropout(dropout_rate)(c8)
-    c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c8)
+    c8 = Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c8)
 
-    u9 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(c8)
+    u9 = Conv2DTranspose(16, (2, 2), strides=(2, 2), padding='same')(c8)
     u9 = concatenate([u9, c1])
-    c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u9)
-    #c9 = Dropout(dropout_rate)(c9)
-    c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c9)
+    c9 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u9)
+    # c9 = Dropout(dropout_rate)(c9)
+    c9 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c9)
 
-    outputs = Conv2D(1, (1, 1), activation='sigmoid')(c9)
+    final = Conv2D(1, (1, 1), activation='sigmoid')(c9)
 
-    model = Model(inputs=[inputs], outputs=[outputs])
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss='binary_crossentropy',
-                  metrics=['accuracy', MyMeanIOU(0.5)])
+    model = Model(inputs=[inputs], outputs=[final])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+                  loss=tf.keras.losses.binary_crossentropy,
+                  metrics=['accuracy'])
     model.summary()
     print("\tRequired memory: " + str(keras_model_memory_usage_in_bytes(model, batch_size=batch_size)))
     print("\tDone!")
@@ -189,15 +204,14 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     batches = int(len(trainingImagePaths) / batch_size)
     earlystopper = EarlyStopping(patience=patience, verbose=1)
     outputPath.mkdir(parents=True, exist_ok=True)
-    realTime = RealTimeCallback(outputPath / "log.pkl", batches)
     print("\tFitting model...", flush=True)
     model.fit(ImagesLoader(trainingImagePaths, trainingSegmentationPaths, imageSize, batch_size),
-              validation_data=ImagesLoader(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
+              # validation_data=ImagesLoader(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
               verbose=1,
               epochs=epochs,
               steps_per_epoch=batches,
-              validation_steps=int(len(testingImagePaths) / batch_size),
-              callbacks=[earlystopper, realTime])
+              # validation_steps=int(len(testingImagePaths) / batch_size),
+              callbacks=[earlystopper])
     print("\tDone!", flush=True)
 
     print("\tSaving model...")
