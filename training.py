@@ -61,7 +61,6 @@ def DoTraining(settings: JobSettings):
 
 
 def LoadImages(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
-    print("Load image " + str(filenames))
     images = [Image.open(imagePath) for imagePath in filenames]
     for imageIndex, image in enumerate(images):
         if image.mode == 'I':
@@ -72,7 +71,6 @@ def LoadImages(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
 
 
 def LoadSegmentations(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
-    print("Load segmentation " + str(filenames))
     segmentations = [Image.open(segmentationPath) for segmentationPath in filenames]
     for segmentationIndex, segmentation in enumerate(segmentations):
         segmentations[segmentationIndex] = np.array(segmentation.resize(imageSize).convert(mode="1"))
