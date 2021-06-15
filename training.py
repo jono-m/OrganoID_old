@@ -57,7 +57,8 @@ class MyMeanIOU(tf.keras.metrics.MeanIoU):
 def DoTraining(settings: JobSettings):
     FitModel(settings.ImagesPath(), settings.SegmentationsPath(), settings.OutputPath(),
              epochs=settings.Epochs(), test_size=settings.GetTestSplit(), patience=5,
-             batch_size=settings.GetBatchSize(), imageSize=settings.GetSize(), dropout_rate=settings.GetDropoutRate())
+             batch_size=settings.GetBatchSize(), imageSize=settings.GetSize(), dropout_rate=settings.GetDropoutRate(),
+             numImages=settings.GetImageNumber())
 
 
 def LoadImages(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
