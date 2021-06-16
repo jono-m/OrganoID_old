@@ -1,3 +1,6 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 from pathlib import Path
 from training import tf
 from PIL import Image, ImageOps
@@ -11,6 +14,7 @@ def LoadH5Model(modelPath, weightsPath):
     file.close()
     loadedModel.load_weights(weightsPath)
     return loadedModel
+
 
 def LoadModel(modelPath):
     loadedModel = tf.keras.models.load_model(modelPath)
@@ -30,14 +34,12 @@ def SegmentImage(imagePath: Path, model, mode):
 
 
 def ShowImage(prepared, segmented):
-    Image.fromarray(segmented[0, :, :, 0] > 0.5).show()
+    Image.fromarray(segmented[0, :, :, 0]).show()
 
 
-model = LoadH5Model("C:/Users/jonoj/Documents/ML/modelZ_20190224123509.json",
-                  "C:/Users/jonoj/Documents/ML/modelZ_20190224123509.h5")
-# model = LoadModel("C:/Models/trainedModel")
-(prepared, segmented) = SegmentImage(Path("C:/Users/jonoj/Documents/ML/X/0.png"),
-                                     model, "RGB")
+model = LoadModel("C:/Users/jonoj/Documents/ML/OrganoID_train_2021_06_15_15_57_02/trainedModel")
+(prepared, segmented) = SegmentImage(Path("C:/Users/jonoj/Documents/ML/X/335.png"),
+                                     model, "L")
 (unique, counts) = np.unique(segmented, return_counts=True)
 frequencies = np.asarray((unique, counts)).T
 
