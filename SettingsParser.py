@@ -17,7 +17,9 @@ class JobSettings:
         self.trackingSubparser.add_argument("imagePath", help="Path to images to analyze.", type=pathlib.Path)
         self.trackingSubparser.add_argument("outputPath", help="Path where analyzed images and data will be saved.",
                                             type=pathlib.Path)
-
+        self.trackingSubparser.add_argument("-G", "--useGPU", dest="useGPU", nargs='?', default=False,
+                                            type=bool,
+                                            help="Set this to True if the GPU should be used")
         self.monitoringSubParser = subparsers.add_parser("monitor", help="Pipeline monitoring commands.")
 
         self.monitoringSubParser.add_argument("logPath", help="Path to log file.", type=pathlib.Path)
@@ -98,6 +100,9 @@ class JobSettings:
 
     def ModelPath(self) -> pathlib.Path:
         return self.args.modelPath.resolve()
+
+    def UseGPU(self) -> bool:
+        return self.args.useGPU
 
     def OutputPath(self) -> pathlib.Path:
         return self.args.outputPath.resolve() / ("OrganoID_" + self.GetMode() + "_" + self.jobID)
