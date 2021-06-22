@@ -66,8 +66,8 @@ def LoadImages(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
     for imageIndex, image in enumerate(images):
         if image.mode == 'I':
             image = image.point(lambda x: x * (1 / 255))
-        images[imageIndex] = np.array(image.resize(imageSize).convert(mode="RGB"))
-    images = np.moveaxis(np.stack(images, axis=-1), -1, 0)
+        images[imageIndex] = np.array(image.resize(imageSize).convert(mode="L"))
+    images = np.expand_dims(np.moveaxis(np.stack(images, axis=-1), -1, 0), -1)
     return images
 
 
@@ -130,7 +130,7 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     print("\tDone!")
 
     print("\tBuilding model pipeline...")
-    inputs = Input((imageSize[0], imageSize[1], 3))
+    inputs = Input((imageSize[0], imageSize[1], 1))
 
     c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(inputs)
     c1 = Dropout(dropout_rate)(c1)

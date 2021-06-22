@@ -37,9 +37,9 @@ def ShowImage(prepared, segmented):
     Image.fromarray(segmented[0, :, :, 0]).show()
 
 
-model = LoadModel("C:/Users/jonoj/Documents/ML/OrganoID_train_2021_06_15_15_57_02/trainedModel")
-(prepared, segmented) = SegmentImage(Path("C:/Users/jonoj/Documents/ML/X/335.png"),
-                                     model, "L")
+model = LoadModel("C:/Users/jonoj/Documents/ML/OrganoID_train_2021_06_22_11_53_51/trainedModel")
+(prepared, segmented) = SegmentImage(Path("C:/Users/jonoj/Documents/ML/X/51.png"),
+                                     model, "RGB")
 (unique, counts) = np.unique(segmented, return_counts=True)
 frequencies = np.asarray((unique, counts)).T
 
