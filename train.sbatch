@@ -13,4 +13,4 @@ echo 'Loading Conda module...'
 module load python
 conda activate /home/jono/ML/Environments/OrganoID
 echo 'Executing python script...'
-python organoID.py train -S 512 512 -B 4 -TS 0.2 -E 100 -DR 0.2 -O /home/jono/ML/Models /home/jono/ML/TrainData/OrganoID_augment_2021_06_15_15_24_28/images /home/jono/ML/TrainData/OrganoID_augment_2021_06_15_15_24_28/segmentations
+python organoID.py train -S 512 512 -B 4 -TS 0.2 -E 100 -DR 0 -O /home/jono/ML/Models /home/jono/ML/TrainData/OrganoID_augment_2021_06_15_15_24_28/images /home/jono/ML/TrainData/OrganoID_augment_2021_06_15_15_24_28/segmentations

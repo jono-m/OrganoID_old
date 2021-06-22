@@ -16,7 +16,7 @@ def ComputeClassImbalance(segmentationsDirectory: Path):
         totalZeros += zeros
         totalOnes += ones
         print(fileIndex)
-    print("Zeros: " + str(totalZeros), ". Ones: " + str(totalZeros) + ". Fraction: " + str(totalOnes / totalZeros))g
+    print("Zeros: " + str(totalZeros), ". Ones: " + str(totalOnes) + ". Fraction: " + str(totalOnes / totalZeros))
 
 
 path = Path("/home/jono/ML/TrainData/OrganoID_augment_2021_06_15_15_24_28/segmentations/")
