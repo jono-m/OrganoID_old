@@ -4,7 +4,11 @@ from PIL import Image
 import numpy as np
 
 
-def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path):
+def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
+    if not useGPU:
+        import os
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
     print("-----------------------")
     print("Running segmentation pipeline...")
     print("\tImages directory: " + str(imagesPath))
@@ -28,13 +32,14 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path):
         print("\tConverting image " + str(imageIndex + 1) + "/" + str(len(images)))
         if image.mode == 'I':
             image = image.point(lambda x: x * (1 / 255))
-        imagePrepared = np.expand_dims(np.array(image.resize(imageSize).convert(mode="RGB")), axis=0)
+        imagePrepared = np.expand_dims(np.array(image.resize(imageSize).convert(mode="L")), axis=0)
         print(imagePrepared.shape)
         print("\tSegmenting image " + str(imageIndex + 1) + "/" + str(len(images)))
-        segmented = model.predict(imagePrepared)[0, :, :, 0].astype(bool)
-        print(segmented.shape)
+        segmented = model.predict(imagePrepared)[0, :, :, 0]
+        (unique, counts) = np.unique(segmented, return_counts=True)
+        frequencies = np.asarray((unique, counts))
+        print("\t\tFrequencies: " + str(frequencies))
         print("\tSaving image " + str(imageIndex + 1) + "/" + str(len(images)))
         outputFilename = imagePaths[imageIndex].stem + "_seg" + imagePaths[imageIndex].suffix
         finalOutput = outputPath / outputFilename
-        print(segmented.dtype)
         Image.fromarray(segmented).save(finalOutput)
