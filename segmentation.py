@@ -16,30 +16,32 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
     print("\tOutput directory: " + str(outputPath))
 
     print("\tLoading model.")
-    model = tf.keras.models.load_model(modelPath)
+    model = tf.keras.models.load_model(str(modelPath.absolute()))
     print("\tDone.")
 
-    print("\tLoading images.")
     imagePaths = [imagePath for imagePath in imagesPath.iterdir() if imagePath.is_file()]
-    images = [Image.open(imagePath) for imagePath in imagePaths]
 
     print("\tDone.")
-    imageSize = images[0].size
 
     outputPath.mkdir(parents=True, exist_ok=True)
 
-    for imageIndex, image in enumerate(images):
-        print("\tConverting image " + str(imageIndex + 1) + "/" + str(len(images)))
-        if image.mode == 'I':
-            image = image.point(lambda x: x * (1 / 255))
-        imagePrepared = np.expand_dims(np.array(image.resize(imageSize).convert(mode="L")), axis=0)
-        print(imagePrepared.shape)
-        print("\tSegmenting image " + str(imageIndex + 1) + "/" + str(len(images)))
-        segmented = model.predict(imagePrepared)[0, :, :, 0]
+    for imageIndex, imagePath in enumerate(imagePaths):
+        print("\tSegmenting image " + str(imageIndex + 1) + "/" + str(len(imagePaths)))
+
+        segmented = SegmentImage(imagePath, model)
         (unique, counts) = np.unique(segmented, return_counts=True)
         frequencies = np.asarray((unique, counts))
         print("\t\tFrequencies: " + str(frequencies))
-        print("\tSaving image " + str(imageIndex + 1) + "/" + str(len(images)))
         outputFilename = imagePaths[imageIndex].stem + "_seg" + imagePaths[imageIndex].suffix
         finalOutput = outputPath / outputFilename
         Image.fromarray(segmented).save(finalOutput)
+
+
+def SegmentImage(imagePath: Path, model):
+    image = Image.open(imagePath)
+    if image.mode == 'I':
+        image = image.point(lambda x: x * (1 / 255))
+    inputShape = model.layer[0].input_shape[0]
+    imagePrepared = np.reshape(np.array(image.resize(inputShape[1:3]).convert(mode="L")), [1] + list(inputShape[1:]))
+    segmented = model.predict(imagePrepared)[0, :, :, 0]
+    return segmented
