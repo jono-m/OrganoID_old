@@ -53,9 +53,50 @@ class MyMeanIOU(tf.keras.metrics.MeanIoU):
 
 def DoTraining(settings: JobSettings):
     FitModel(settings.ImagesPath(), settings.SegmentationsPath(), settings.OutputPath(),
-             epochs=settings.Epochs(), test_size=settings.GetTestSplit(), patience=5,
+             epochs=settings.Epochs(), test_size=settings.GetTestSplit(), patience=15,
              batch_size=settings.GetBatchSize(), imageSize=settings.GetSize(), dropout_rate=settings.GetDropoutRate(),
              numImages=settings.GetImageNumber())
+
+
+def CreateModel(dropoutRate, learningRate, imageSize):
+    print("\tBuilding model pipeline...")
+    inputs = Input((imageSize[0], imageSize[1], 1))
+
+    startSize = 16
+
+    currentLayer = inputs
+    contractingLayers = []
+    for i in range(5):
+        if i > 0:
+            currentLayer = MaxPooling2D((2, 2))(currentLayer)
+
+        size = startSize * 2 ** i
+        currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
+            currentLayer)
+        currentLayer = Dropout(dropoutRate)(currentLayer)
+        currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
+            currentLayer)
+        contractingLayers.append(currentLayer)
+
+    for i in reversed(range(4)):
+        size = startSize * 2 ** i
+
+        currentLayer = Conv2DTranspose(size, (2, 2), strides=(2, 2), padding='same')(currentLayer)
+        currentLayer = concatenate([currentLayer, contractingLayers[i]])
+        currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
+            currentLayer)
+        currentLayer = Dropout(dropoutRate)(currentLayer)
+        currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
+            currentLayer)
+
+    final = Conv2D(1, (1, 1), activation='sigmoid')(currentLayer)
+
+    model = Model(inputs=[inputs], outputs=[final])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learningRate, epsilon=1e-4),
+                  loss=tf.keras.losses.binary_crossentropy,
+                  metrics=[MyMeanIOU()])
+
+    return model
 
 
 def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPath: Path, epochs: int,
@@ -63,6 +104,15 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
              dropout_rate=0.1, learning_rate=0.00001):
     print("-----------------------")
     print("Building model...")
+
+    strategy = tf.distribute.MirroredStrategy()
+    print('Number of devices: ' + str(strategy.num_replicas_in_sync))
+    with strategy.scope():
+        model = CreateModel(dropout_rate, learning_rate, imageSize)
+    model.summary()
+    print("\tRequired memory: " + str(keras_model_memory_usage_in_bytes(model, batch_size=batch_size)))
+    print("\tDone!")
+
     print("\tImages directory: " + str(trainingImagesPath))
     print("\tSegmentations directory: " + str(trainingSegmentationsPath))
     print("\tModel directory: " + str(outputPath))
@@ -85,46 +135,6 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
             segmentationPaths,
             test_size=test_size)
 
-    print("\tDone!")
-
-    print("\tBuilding model pipeline...")
-    inputs = Input((imageSize[0], imageSize[1], 1))
-
-    startSize = 64
-
-    currentLayer = inputs
-    contractingLayers = []
-    for i in range(5):
-        if i > 0:
-            currentLayer = MaxPooling2D((2, 2))(currentLayer)
-
-        size = startSize * 2 ** i
-        currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
-            currentLayer)
-        currentLayer = Dropout(dropout_rate)(currentLayer)
-        currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
-            currentLayer)
-        contractingLayers.append(currentLayer)
-
-    for i in reversed(range(4)):
-        size = startSize * 2 ** i
-
-        currentLayer = Conv2DTranspose(size, (2, 2), strides=(2, 2), padding='same')(currentLayer)
-        currentLayer = concatenate([currentLayer, contractingLayers[i]])
-        currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
-            currentLayer)
-        currentLayer = Dropout(dropout_rate)(currentLayer)
-        currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
-            currentLayer)
-
-    final = Conv2D(1, (1, 1), activation='sigmoid')(currentLayer)
-
-    model = Model(inputs=[inputs], outputs=[final])
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate, epsilon=1e-4),
-                  loss=tf.keras.losses.binary_crossentropy,
-                  metrics=[MyMeanIOU()])
-    model.summary()
-    print("\tRequired memory: " + str(keras_model_memory_usage_in_bytes(model, batch_size=batch_size)))
     print("\tDone!")
 
     earlystopper = EarlyStopping(patience=patience, verbose=1)
