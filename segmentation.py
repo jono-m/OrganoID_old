@@ -16,7 +16,8 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
     print("\tOutput directory: " + str(outputPath))
 
     print("\tLoading model.")
-    model = tf.keras.models.load_model(str(modelPath.absolute()))
+    model = tf.keras.models.load_model(str(modelPath.absolute()), compile=False)
+    model.compile(loss=tf.keras.losses.binary_crossentropy)
     print("\tDone.")
 
     imagePaths = [imagePath for imagePath in imagesPath.iterdir() if imagePath.is_file()]
@@ -34,14 +35,14 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
         print("\t\tFrequencies: " + str(frequencies))
         outputFilename = imagePaths[imageIndex].stem + "_seg" + imagePaths[imageIndex].suffix
         finalOutput = outputPath / outputFilename
-        Image.fromarray(segmented).save(finalOutput)
+        Image.fromarray(segmented > 0.5).convert(mode="1").save(finalOutput)
 
 
 def SegmentImage(imagePath: Path, model):
     image = Image.open(imagePath)
     if image.mode == 'I':
         image = image.point(lambda x: x * (1 / 255))
-    inputShape = model.layer[0].input_shape[0]
+    inputShape = model.layers[0].input_shape[0]
     imagePrepared = np.reshape(np.array(image.resize(inputShape[1:3]).convert(mode="L")), [1] + list(inputShape[1:]))
     segmented = model.predict(imagePrepared)[0, :, :, 0]
     return segmented

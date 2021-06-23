@@ -1,1 +1,0 @@
-python organoID.py train -S 512 512 -B 1 -TS 0.1 -E 20 -DR 0.0 -O C:/Models C:/Users/jonoj/Documents/ML/2021_OriginalX C:/Users/jonoj/Documents/ML/202105_OriginalY

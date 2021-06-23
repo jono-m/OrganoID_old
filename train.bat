@@ -1,0 +1,1 @@
+python organoID.py train -B 4 -TS 0 -E 100 -DR 0 -S 512 512 -O C:\Users\jonoj\Documents\ML\Models C:\Users\jonoj\Documents\ML\Jono_2021Masks\2021_OriginalX C:\Users\jonoj\Documents\ML\Jono_2021Masks\202105_OriginalY
