@@ -60,7 +60,7 @@ def DoTraining(settings: JobSettings):
 
 def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPath: Path, epochs: int,
              test_size=0.5, batch_size=1, patience=5, imageSize: typing.Tuple[int, int] = (640, 640), numImages=-1,
-             dropout_rate=0.1, learning_rate=0.00001):
+             dropout_rate=0.1, learning_rate=0.0001):
     print("-----------------------")
     print("Building model...")
     print("\tImages directory: " + str(trainingImagesPath))
@@ -90,7 +90,7 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     print("\tBuilding model pipeline...")
     inputs = Input((imageSize[0], imageSize[1], 1))
 
-    startSize = 64
+    startSize = 16
 
     currentLayer = inputs
     contractingLayers = []
