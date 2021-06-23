@@ -19,5 +19,5 @@ def ComputeClassImbalance(segmentationsDirectory: Path):
     print("Zeros: " + str(totalZeros), ". Ones: " + str(totalOnes) + ". Fraction: " + str(totalOnes / totalZeros))
 
 
-path = Path("/home/jono/ML/TrainData/OrganoID_augment_2021_06_15_15_24_28/segmentations/")
+path = Path(r"C:\Users\jonoj\Documents\ML\Jono_2021Masks\202105_OriginalY")
 ComputeClassImbalance(path)

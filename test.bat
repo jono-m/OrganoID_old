@@ -1,0 +1,1 @@
+python organoID.py run -G True C:\Users\jonoj\Documents\ML\Models\OrganoID_train_2021_06_23_13_21_47\trainedModel C:\Users\jonoj\Documents\ML\Jono_2021Masks\2021_OriginalX C:\Users\jonoj\Documents\ML\Segmentations

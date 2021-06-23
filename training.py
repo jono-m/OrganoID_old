@@ -1,12 +1,10 @@
 from SettingsParser import JobSettings
 
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate, Reshape
+from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, Callback
-
-import numpy as np
-from PIL import Image
+from DataGenerator import DataGenerator
 
 from sklearn.model_selection import train_test_split
 
@@ -44,13 +42,12 @@ class RealTimeCallback(Callback):
 
 
 class MyMeanIOU(tf.keras.metrics.MeanIoU):
-    def __init__(self, threshold):
+    def __init__(self):
         super().__init__(num_classes=2, name="MeanIOU")
-        self.threshold = threshold
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         formattedTrue = tf.cast(y_true, tf.uint8)
-        formattedPredictions = tf.cast(tf.math.greater_equal(y_pred, self.threshold), tf.uint8),
+        formattedPredictions = tf.cast(tf.math.greater_equal(y_pred, 0.5), tf.uint8),
         return super().update_state(formattedTrue, formattedPredictions, sample_weight)
 
 
@@ -61,48 +58,9 @@ def DoTraining(settings: JobSettings):
              numImages=settings.GetImageNumber())
 
 
-def LoadImages(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
-    images = [Image.open(imagePath) for imagePath in filenames]
-    for imageIndex, image in enumerate(images):
-        if image.mode == 'I':
-            image = image.point(lambda x: x * (1 / 255))
-        images[imageIndex] = np.array(image.resize(imageSize).convert(mode="L"))
-    images = np.expand_dims(np.moveaxis(np.stack(images, axis=-1), -1, 0), -1)
-    return images
-
-
-def LoadSegmentations(filenames: typing.List[Path], imageSize: typing.Tuple[int, int]):
-    segmentations = [Image.open(segmentationPath) for segmentationPath in filenames]
-    for segmentationIndex, segmentation in enumerate(segmentations):
-        segmentations[segmentationIndex] = np.array(segmentation.resize(imageSize).convert(mode="1"))
-
-    segmentations = np.moveaxis(np.stack(segmentations, axis=-1), -1, 0).astype(int)
-    return segmentations
-
-
-def ImagesLoader(imageFileNames: typing.List[Path], segmentationFileNames: typing.List[Path],
-                 imageSize: typing.Tuple[int, int], batchSize: int):
-    L = len(imageFileNames)
-
-    # this line is just to make the generator infinite, keras needs that
-    while True:
-        batchStart = 0
-        batchEnd = batchSize
-
-        while batchStart < L:
-            limit = min(batchEnd, L)
-            X = LoadImages(imageFileNames[batchStart:limit], imageSize)
-            Y = LoadSegmentations(segmentationFileNames[batchStart:limit], imageSize)
-
-            yield X, Y  # a tuple with two numpy arrays with batch_size samples
-
-            batchStart += batchSize
-            batchEnd += batchSize
-
-
 def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPath: Path, epochs: int,
              test_size=0.5, batch_size=1, patience=5, imageSize: typing.Tuple[int, int] = (640, 640), numImages=-1,
-             dropout_rate=0.1, learning_rate=0.001):
+             dropout_rate=0.1, learning_rate=0.00001):
     print("-----------------------")
     print("Building model...")
     print("\tImages directory: " + str(trainingImagesPath))
@@ -133,73 +91,70 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     inputs = Input((imageSize[0], imageSize[1], 1))
 
     c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(inputs)
-    c1 = Dropout(dropout_rate)(c1)
+    # c1 = Dropout(dropout_rate)(c1)
     c1 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c1)
 
     p1 = MaxPooling2D((2, 2))(c1)
     c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p1)
-    c2 = Dropout(dropout_rate)(c2)
+    # c2 = Dropout(dropout_rate)(c2)
     c2 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c2)
 
     p2 = MaxPooling2D((2, 2))(c2)
     c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p2)
-    c3 = Dropout(dropout_rate)(c3)
+    # c3 = Dropout(dropout_rate)(c3)
     c3 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c3)
 
     p3 = MaxPooling2D((2, 2))(c3)
     c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p3)
-    c4 = Dropout(dropout_rate)(c4)
+    # c4 = Dropout(dropout_rate)(c4)
     c4 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c4)
 
     p4 = MaxPooling2D(pool_size=(2, 2))(c4)
     c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p4)
-    c5 = Dropout(dropout_rate)(c5)
+    # c5 = Dropout(dropout_rate)(c5)
     c5 = Conv2D(1024, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c5)
 
     u6 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c5)
     u6 = concatenate([u6, c4])
     c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u6)
-    c6 = Dropout(dropout_rate)(c6)
+    # c6 = Dropout(dropout_rate)(c6)
     c6 = Conv2D(512, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c6)
 
     u7 = Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same')(c6)
     u7 = concatenate([u7, c3])
     c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u7)
-    c7 = Dropout(dropout_rate)(c7)
+    # c7 = Dropout(dropout_rate)(c7)
     c7 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c7)
 
     u8 = Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(c7)
     u8 = concatenate([u8, c2])
     c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u8)
-    c8 = Dropout(dropout_rate)(c8)
+    # c8 = Dropout(dropout_rate)(c8)
     c8 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c8)
 
     u9 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(c8)
     u9 = concatenate([u9, c1])
     c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u9)
-    c9 = Dropout(dropout_rate)(c9)
+    # c9 = Dropout(dropout_rate)(c9)
     c9 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c9)
 
     final = Conv2D(1, (1, 1), activation='sigmoid')(c9)
 
     model = Model(inputs=[inputs], outputs=[final])
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate, epsilon=1e-4),
                   loss=tf.keras.losses.binary_crossentropy,
-                  metrics=['accuracy'])
+                  metrics=[MyMeanIOU()])
     model.summary()
     print("\tRequired memory: " + str(keras_model_memory_usage_in_bytes(model, batch_size=batch_size)))
     print("\tDone!")
 
-    batches = int(len(trainingImagePaths) / batch_size)
     earlystopper = EarlyStopping(patience=patience, verbose=1)
     outputPath.mkdir(parents=True, exist_ok=True)
     print("\tFitting model...", flush=True)
-    model.fit(ImagesLoader(trainingImagePaths, trainingSegmentationPaths, imageSize, batch_size),
-              validation_data=ImagesLoader(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
+    model.fit(DataGenerator(trainingImagePaths, trainingSegmentationPaths, imageSize, batch_size),
+              validation_data=DataGenerator(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
               verbose=1,
               epochs=epochs,
-              steps_per_epoch=batches,
-              validation_steps=int(len(testingImagePaths) / batch_size),
               callbacks=[earlystopper])
     print("\tDone!", flush=True)
 
