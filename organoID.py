@@ -7,18 +7,23 @@ print("Beginning OrganoID job " + settings.jobID + "...")
 if settings.GetMode() == "train":
     import training
 
-    training.DoTraining(settings)
-elif settings.GetMode() == "run":
-    import run
+    training.FitModel(settings.TrainingImagesPath(), settings.TrainingSegmentationsPath(), settings.TestingImagesPath(),
+                      settings.TestingSegmentationsPath(), settings.OutputPath(), settings.Epochs(),
+                      settings.GetBatchSize(), settings.GetPatience(), settings.GetSize(), settings.GetDropoutRate(),
+                      settings.GetLearningRate())
 
-    run.DoRun(settings)
+elif settings.GetMode() == "run":
+    import segmentation
+
+    segmentation.DoSegmentation(settings.ImagesPath(), settings.OutputPath(), settings.ModelPath(), settings.UseGPU())
 elif settings.GetMode() == "augment":
     import augmentation
 
-    augmentation.DoAugment(settings)
-elif settings.GetMode() == "monitor":
-    import monitoring
-
-    monitoring.DoMonitor(settings)
+    augmentation.Augment(settings.OutputPath(),
+                         settings.ImagesPath(),
+                         settings.SegmentationsPath(),
+                         settings.GetTestSplit(),
+                         settings.GetSize(),
+                         settings.AugmentCount())
 
 print("Job complete.")

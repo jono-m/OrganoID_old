@@ -1,44 +1,12 @@
-from SettingsParser import JobSettings
-
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
 from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import EarlyStopping, Callback
+from tensorflow.keras.callbacks import EarlyStopping
 from DataGenerator import DataGenerator
 
-from sklearn.model_selection import train_test_split
-
 from pathlib import Path
+from PlotCallback import PlotCallback
 import typing
-
-import dill
-from realTimeData import RealTimeData
-
-
-class RealTimeCallback(Callback):
-    def __init__(self, path: Path, totalBatches: int):
-        super().__init__()
-        self.path = path
-
-        self.totalBatches = totalBatches
-        self.data = RealTimeData(totalBatches)
-
-    def on_train_batch_end(self, batch, logs=None):
-        if not logs or 'loss' not in logs:
-            return
-        current = self.data.epochs[-1]
-        current.losses.append(logs['loss'])
-        current.accuracies.append(logs['accuracy'])
-        current.meanIOUs.append(logs['MeanIOU'])
-        self.Rewrite()
-
-    def on_epoch_begin(self, epoch, logs=None):
-        self.data.epochs.append(RealTimeData.EpochData())
-        self.Rewrite()
-
-    def Rewrite(self):
-        with open(self.path, "wb") as file:
-            dill.dump(self.data, file)
 
 
 class MyMeanIOU(tf.keras.metrics.MeanIoU):
@@ -49,13 +17,6 @@ class MyMeanIOU(tf.keras.metrics.MeanIoU):
         formattedTrue = tf.cast(y_true, tf.uint8)
         formattedPredictions = tf.cast(tf.math.greater_equal(y_pred, 0.5), tf.uint8),
         return super().update_state(formattedTrue, formattedPredictions, sample_weight)
-
-
-def DoTraining(settings: JobSettings):
-    FitModel(settings.ImagesPath(), settings.SegmentationsPath(), settings.OutputPath(),
-             epochs=settings.Epochs(), test_size=settings.GetTestSplit(), patience=15,
-             batch_size=settings.GetBatchSize(), imageSize=settings.GetSize(), dropout_rate=settings.GetDropoutRate(),
-             numImages=settings.GetImageNumber())
 
 
 def CreateModel(dropoutRate, learningRate, imageSize):
@@ -73,7 +34,7 @@ def CreateModel(dropoutRate, learningRate, imageSize):
         size = startSize * 2 ** i
         currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
             currentLayer)
-        currentLayer = Dropout(dropoutRate)(currentLayer)
+        currentLayer = Dropout(dropoutRate*i)(currentLayer)
         currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
             currentLayer)
         contractingLayers.append(currentLayer)
@@ -85,23 +46,23 @@ def CreateModel(dropoutRate, learningRate, imageSize):
         currentLayer = concatenate([currentLayer, contractingLayers[i]])
         currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
             currentLayer)
-        currentLayer = Dropout(dropoutRate)(currentLayer)
+        currentLayer = Dropout(dropoutRate*i)(currentLayer)
         currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
             currentLayer)
 
     final = Conv2D(1, (1, 1), activation='sigmoid')(currentLayer)
 
     model = Model(inputs=[inputs], outputs=[final])
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learningRate, epsilon=1e-4),
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learningRate),
                   loss=tf.keras.losses.binary_crossentropy,
                   metrics=[MyMeanIOU()])
 
     return model
 
 
-def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPath: Path, epochs: int,
-             test_size=0.5, batch_size=1, patience=5, imageSize: typing.Tuple[int, int] = (640, 640), numImages=-1,
-             dropout_rate=0.1, learning_rate=0.00001):
+def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, testingImagesPath: Path,
+             testingSegmentationsPath: Path, outputPath: Path, epochs: int, batch_size, patience,
+             imageSize: typing.Tuple[int, int], dropout_rate, learning_rate):
     print("-----------------------")
     print("Building model...")
 
@@ -117,34 +78,26 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, outputPa
     print("\tSegmentations directory: " + str(trainingSegmentationsPath))
     print("\tModel directory: " + str(outputPath))
 
-    imagePaths = [imagePath for imagePath in sorted(trainingImagesPath.iterdir()) if imagePath.is_file()]
-    imagePaths = imagePaths[:numImages]
-    segmentationPaths = [segmentationPath for segmentationPath in sorted(trainingSegmentationsPath.iterdir())
-                         if segmentationPath.is_file()]
-    segmentationPaths = segmentationPaths[:numImages]
+    trainingImagePaths = [imagePath for imagePath in sorted(trainingImagesPath.iterdir()) if imagePath.is_file()]
+    trainingSegmentationPaths = [segmentationPath for segmentationPath in sorted(trainingSegmentationsPath.iterdir())
+                                 if segmentationPath.is_file()]
+    testingImagePaths = [imagePath for imagePath in sorted(testingImagesPath.iterdir()) if imagePath.is_file()]
+    testingSegmentationPaths = [segmentationPath for segmentationPath in sorted(testingSegmentationsPath.iterdir())
+                                if segmentationPath.is_file()]
 
     print("\tDone.")
 
-    print("\tSplitting training and testing datasets (" + str(test_size * 100) + "% for testing)...")
-    if test_size == 0:
-        trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = \
-            imagePaths, imagePaths, segmentationPaths, segmentationPaths
-    else:
-        trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(
-            imagePaths,
-            segmentationPaths,
-            test_size=test_size)
-
     print("\tDone!")
 
-    earlystopper = EarlyStopping(patience=patience, verbose=1)
+    print(patience)
+    earlyStopper = EarlyStopping(patience=patience, verbose=1, restore_best_weights=True)
     outputPath.mkdir(parents=True, exist_ok=True)
     print("\tFitting model...", flush=True)
     model.fit(DataGenerator(trainingImagePaths, trainingSegmentationPaths, imageSize, batch_size),
               validation_data=DataGenerator(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
               verbose=1,
               epochs=epochs,
-              callbacks=[earlystopper])
+              callbacks=[PlotCallback(Path(r"C:\Users\jonoj\Documents\ML\AugmentedData\OrganoID_augment_2021_06_24_10_01_40\raw\training\images\337.png"), outputPath / "modelLearningEx"), earlyStopper])
     print("\tDone!", flush=True)
 
     print("\tSaving model...")

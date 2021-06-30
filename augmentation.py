@@ -1,31 +1,55 @@
 import Augmentor
 from pathlib import Path
 import re
-import SettingsParser
 import typing
+import shutil
+
+from sklearn.model_selection import train_test_split
 
 
-def DoAugment(settings: SettingsParser):
-    Augment(settings.OutputPath(),
-            settings.ImagesPath(),
-            settings.SegmentationsPath(),
-            settings.GetSize(),
-            settings.AugmentCount())
+def Augment(outputPath: Path, imagesPath: Path, segmentationsPath: Path, testSplit: float,
+            size: typing.Tuple[int, int], augmentCount: int):
+    imagePaths = [imagePath for imagePath in sorted(imagesPath.iterdir()) if imagePath.is_file()]
+    segmentationPaths = [segmentationPath for segmentationPath in sorted(segmentationsPath.iterdir())
+                         if segmentationPath.is_file()]
+    print("\tSplitting training and testing datasets (" + str(testSplit * 100) + "% for testing)...")
+    trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(
+        imagePaths,
+        segmentationPaths,
+        test_size=testSplit)
 
+    rawTrainingImagesPath = outputPath / "raw" / "training" / "images"
+    rawTrainingSegmentationsPath = outputPath / "raw" / "training" / "segmentations"
+    rawTestingImagesPath = outputPath / "raw" / "testing" / "images"
+    rawTestingSegmentationsPath = outputPath / "raw" / "testing" / "segmentations"
 
-def Augment(outputPath: Path, trainingImagesPath: Path, trainingSegmentationsPath: Path, size: typing.Tuple[int, int],
-            augmentCount: int):
-    outputPath.mkdir(parents=True, exist_ok=True)
+    Copy(trainingImagePaths, rawTrainingImagesPath)
+    Copy(trainingSegmentationPaths, rawTrainingSegmentationsPath)
+    Copy(testingImagePaths, rawTestingImagesPath)
+    Copy(testingSegmentationPaths, rawTestingSegmentationsPath)
 
     print("-----------------------")
-    print("Augmenting training data...")
-    print("\tImages directory: " + str(trainingImagesPath))
-    print("\tSegmentations directory: " + str(trainingSegmentationsPath))
+    print("Augmenting data...")
+    RunPipeline(rawTrainingImagesPath, rawTrainingSegmentationsPath, outputPath / "training", size, augmentCount)
+    RunPipeline(rawTestingImagesPath, rawTestingSegmentationsPath, outputPath / "testing", size,
+                int(augmentCount * testSplit))
+    print("-----------------------")
 
-    augmentor = Augmentor.Pipeline(source_directory=trainingImagesPath,
+
+def Copy(paths: typing.List[Path], output: Path):
+    output.mkdir(parents=True, exist_ok=True)
+    for path in paths:
+        newPath = output / path.name
+        shutil.copy(path, newPath)
+
+
+def RunPipeline(imagesPath: Path, segmentationPath: Path, outputPath: Path, size, augmentCount):
+    outputPath.mkdir(parents=True, exist_ok=True)
+
+    augmentor = Augmentor.Pipeline(source_directory=imagesPath,
                                    output_directory=outputPath)
     augmentor.set_save_format("auto")
-    augmentor.ground_truth(trainingSegmentationsPath)
+    augmentor.ground_truth(segmentationPath)
 
     augmentor.resize(1, size[0], size[1])
     augmentor.rotate(probability=1, max_left_rotation=5, max_right_rotation=5)
@@ -39,13 +63,10 @@ def Augment(outputPath: Path, trainingImagesPath: Path, trainingSegmentationsPat
 
     augmentor.sample(augmentCount)
 
-    print("\tDone!")
-    print("\tReorganizing directory structure...")
-
-    trainingImagesAugmentedPath = outputPath / "images"
-    trainingImagesAugmentedPath.mkdir(parents=True, exist_ok=True)
-    trainingSegmentationsAugmentedPath = outputPath / "segmentations"
-    trainingSegmentationsAugmentedPath.mkdir(parents=True, exist_ok=True)
+    outputImagesPath = outputPath / "images"
+    outputImagesPath.mkdir(parents=True, exist_ok=True)
+    outputSegmentationsPath = outputPath / "segmentations"
+    outputSegmentationsPath.mkdir(parents=True, exist_ok=True)
 
     results = list(outputPath.glob("*.*"))
     trainingSegmentationFiles = list(outputPath.glob("_groundtruth*"))
@@ -53,15 +74,8 @@ def Augment(outputPath: Path, trainingImagesPath: Path, trainingSegmentationsPat
 
     for trainingSegmentationFile in trainingSegmentationFiles:
         newFilename = re.sub(".*_", "", trainingSegmentationFile.name)
-        trainingSegmentationFile.rename(trainingSegmentationsAugmentedPath / newFilename)
+        trainingSegmentationFile.rename(outputSegmentationsPath / newFilename)
 
     for trainingImageFile in trainingImageFiles:
         newFilename = re.sub(".*_", "", trainingImageFile.name)
-        trainingImageFile.rename(trainingImagesAugmentedPath / newFilename)
-
-    print("\tDone!")
-
-    results = trainingImagesAugmentedPath, trainingSegmentationsAugmentedPath
-    print("Augmented images saved to '" + str(results[0]))
-    print("Augmented segmentations saved to '" + str(results[1]))
-    print("-----------------------")
+        trainingImageFile.rename(outputImagesPath / newFilename)

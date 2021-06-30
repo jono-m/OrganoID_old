@@ -29,20 +29,34 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
     for imageIndex, imagePath in enumerate(imagePaths):
         print("\tSegmenting image " + str(imageIndex + 1) + "/" + str(len(imagePaths)))
 
-        segmented = SegmentImage(imagePath, model)
-        (unique, counts) = np.unique(segmented, return_counts=True)
-        frequencies = np.asarray((unique, counts))
-        print("\t\tFrequencies: " + str(frequencies))
-        outputFilename = imagePaths[imageIndex].stem + "_seg" + imagePaths[imageIndex].suffix
-        finalOutput = outputPath / outputFilename
-        Image.fromarray(segmented > 0.5).convert(mode="1").save(finalOutput)
+        image = Image.open(imagePath)
+        segmentedImage = SegmentImage(image, model)
+
+        # Save segmentation
+        segmentedFilename = outputPath / ("seg_" + imagePaths[imageIndex].stem + imagePaths[imageIndex].suffix)
+        segmentedImage.save(segmentedFilename)
+
+        # Save blended
+        blendedFilename = outputPath / ("blend_ " + imagePaths[imageIndex].stem + imagePaths[imageIndex].suffix)
+        blendedImage = BlendImage(image, segmentedImage)
+        blendedImage.save(blendedFilename)
 
 
-def SegmentImage(imagePath: Path, model):
-    image = Image.open(imagePath)
-    if image.mode == 'I':
+def BlendImage(image: Image, segmentation: Image):
+    if image.mode == 'I' or image.mode == 'I;16':
+        image = image.point(lambda x: x * (1 / 255))
+    imageRGB = image.convert(mode="RGB").resize(segmentation.size)
+    overlayRGB = Image.new(mode="RGB", size=imageRGB.size, color=(0, 255, 0))
+    segmentationMask = segmentation.convert(mode="L").point(lambda pixel: int(pixel) / 2)
+    composite = Image.composite(overlayRGB, imageRGB, segmentationMask)
+    return composite
+
+
+def SegmentImage(image: Image, model):
+    if image.mode == 'I' or image.mode == 'I;16':
         image = image.point(lambda x: x * (1 / 255))
     inputShape = model.layers[0].input_shape[0]
-    imagePrepared = np.reshape(np.array(image.resize(inputShape[1:3]).convert(mode="L")), [1] + list(inputShape[1:]))
+    imagePrepared = np.reshape(np.array(image.convert(mode="L").resize(inputShape[1:3])), [1] + list(inputShape[1:]))
     segmented = model.predict(imagePrepared)[0, :, :, 0]
-    return segmented
+    segmentedImage = Image.fromarray(segmented > 0.5).convert(mode="1")
+    return segmentedImage

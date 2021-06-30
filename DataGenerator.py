@@ -33,16 +33,16 @@ class DataGenerator(tf.keras.utils.Sequence):
     def LoadImages(self, imagePaths):
         images = [Image.open(imagePath) for imagePath in imagePaths]
         for imageIndex, image in enumerate(images):
-            if image.mode == 'I':
+            if image.mode == 'I' or image.mode == 'I;16':
                 image = image.point(lambda x: x * (1 / 255))
-            images[imageIndex] = np.array(image.resize(self.imageSize).convert(mode="L"))
+            images[imageIndex] = np.array(image.convert(mode="L").resize(self.imageSize))
         images = np.expand_dims(np.moveaxis(np.stack(images, axis=-1), -1, 0), -1)
         return images
 
     def LoadSegmentations(self, segmentationPaths):
         segmentations = [Image.open(segmentationPath) for segmentationPath in segmentationPaths]
         for segmentationIndex, segmentation in enumerate(segmentations):
-            segmentations[segmentationIndex] = np.array(segmentation.resize(self.imageSize).convert(mode="1"))
+            segmentations[segmentationIndex] = np.array(segmentation.convert(mode="1").resize(self.imageSize))
 
         segmentations = np.moveaxis(np.stack(segmentations, axis=-1), -1, 0).astype(int)
         return segmentations
