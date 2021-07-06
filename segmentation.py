@@ -4,6 +4,12 @@ from PIL import Image
 import numpy as np
 
 
+def OpenModel(modelPath: Path):
+    model = tf.keras.models.load_model(str(modelPath.absolute()), compile=False)
+    model.compile(loss=tf.keras.losses.binary_crossentropy)
+    return model
+
+
 def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
     if not useGPU:
         import os
@@ -16,8 +22,7 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
     print("\tOutput directory: " + str(outputPath))
 
     print("\tLoading model.")
-    model = tf.keras.models.load_model(str(modelPath.absolute()), compile=False)
-    model.compile(loss=tf.keras.losses.binary_crossentropy)
+    model = OpenModel(modelPath)
     print("\tDone.")
 
     imagePaths = [imagePath for imagePath in imagesPath.iterdir() if imagePath.is_file()]
