@@ -1,1 +1,1 @@
-python organoID.py augment -TS 0.2 -S 512 512 -O C:\Users\jonoj\Documents\ML\AugmentedData 2000 C:\Users\jonoj\Documents\ML\RawDataNoSplit
+python organoID.py augment -TS 0 -S 512 512 -O C:\Users\jonoj\Documents\ML\AugmentedData\xy077 20 C:\Users\jonoj\Documents\ML\Fig1Augmented\xy077

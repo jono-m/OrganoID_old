@@ -12,28 +12,39 @@ def Augment(outputPath: Path, imagesPath: Path, segmentationsPath: Path, testSpl
     imagePaths = [imagePath for imagePath in sorted(imagesPath.iterdir()) if imagePath.is_file()]
     segmentationPaths = [segmentationPath for segmentationPath in sorted(segmentationsPath.iterdir())
                          if segmentationPath.is_file()]
-    print("\tSplitting training and testing datasets (" + str(testSplit * 100) + "% for testing)...")
-    trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(
-        imagePaths,
-        segmentationPaths,
-        test_size=testSplit)
 
-    rawTrainingImagesPath = outputPath / "raw" / "training" / "images"
-    rawTrainingSegmentationsPath = outputPath / "raw" / "training" / "segmentations"
-    rawTestingImagesPath = outputPath / "raw" / "testing" / "images"
-    rawTestingSegmentationsPath = outputPath / "raw" / "testing" / "segmentations"
+    if testSplit == 0:
+        rawImagesPath = outputPath / "raw" / "images"
+        rawSegmentationsPath = outputPath / "raw" / "segmentations"
+        Copy(imagePaths, rawImagesPath)
+        Copy(segmentationPaths, rawSegmentationsPath)
 
-    Copy(trainingImagePaths, rawTrainingImagesPath)
-    Copy(trainingSegmentationPaths, rawTrainingSegmentationsPath)
-    Copy(testingImagePaths, rawTestingImagesPath)
-    Copy(testingSegmentationPaths, rawTestingSegmentationsPath)
+        print("-----------------------")
+        print("Augmenting data...")
+        RunPipeline(rawImagesPath, rawSegmentationsPath, outputPath / "augmented", size, augmentCount)
+        print("-----------------------")
+    else:
+        print("\tSplitting training and testing datasets (" + str(testSplit * 100) + "% for testing)...")
+        rawTrainingImagesPath = outputPath / "raw" / "training" / "images"
+        rawTrainingSegmentationsPath = outputPath / "raw" / "training" / "segmentations"
+        rawTestingImagesPath = outputPath / "raw" / "testing" / "images"
+        rawTestingSegmentationsPath = outputPath / "raw" / "testing" / "segmentations"
+        trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(
+            imagePaths,
+            segmentationPaths,
+            test_size=testSplit)
 
-    print("-----------------------")
-    print("Augmenting data...")
-    RunPipeline(rawTrainingImagesPath, rawTrainingSegmentationsPath, outputPath / "training", size, augmentCount)
-    RunPipeline(rawTestingImagesPath, rawTestingSegmentationsPath, outputPath / "testing", size,
-                int(augmentCount * testSplit))
-    print("-----------------------")
+        Copy(trainingImagePaths, rawTrainingImagesPath)
+        Copy(trainingSegmentationPaths, rawTrainingSegmentationsPath)
+        Copy(testingImagePaths, rawTestingImagesPath)
+        Copy(testingSegmentationPaths, rawTestingSegmentationsPath)
+
+        print("-----------------------")
+        print("Augmenting data...")
+        RunPipeline(rawTrainingImagesPath, rawTrainingSegmentationsPath, outputPath / "training", size, augmentCount)
+        RunPipeline(rawTestingImagesPath, rawTestingSegmentationsPath, outputPath / "testing", size,
+                    int(augmentCount * testSplit))
+        print("-----------------------")
 
 
 def Copy(paths: typing.List[Path], output: Path):
@@ -52,11 +63,11 @@ def RunPipeline(imagesPath: Path, segmentationPath: Path, outputPath: Path, size
     augmentor.ground_truth(segmentationPath)
 
     augmentor.resize(1, size[0], size[1])
-    augmentor.rotate(probability=1, max_left_rotation=5, max_right_rotation=5)
+    augmentor.rotate(probability=1, max_left_rotation=20, max_right_rotation=20)
     augmentor.flip_left_right(probability=0.5)
     augmentor.flip_top_bottom(probability=0.5)
-    augmentor.zoom_random(probability=0.5, percentage_area=0.9)
-    augmentor.shear(probability=1, max_shear_left=15, max_shear_right=15)
+    augmentor.zoom_random(probability=0.5, percentage_area=0.7)
+    augmentor.shear(probability=1, max_shear_left=20, max_shear_right=20)
     augmentor.random_distortion(probability=0.5, grid_width=5, grid_height=5, magnitude=3)
     augmentor.skew(probability=0.5, magnitude=0.3)
     augmentor.resize(1, size[0], size[1])

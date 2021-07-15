@@ -1,29 +1,29 @@
-import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 from PIL import Image, ImageQt, ImageOps
 from typing import Optional
 from PySide6.QtWidgets import QFrame, QLabel, QPushButton, QFileDialog, QGridLayout, QVBoxLayout, QHBoxLayout, \
-    QSizePolicy, QSlider, QCheckBox, QSpinBox, QWidget
+    QSizePolicy, QSlider, QCheckBox, QSpinBox, QWidget, QDoubleSpinBox
 from PySide6.QtGui import QPixmap, Qt, QPainter, QFont, QFontMetrics
 from PySide6.QtCore import QPoint, QSize
-import skimage.measure
-import skimage.color
+from skimage.measure import regionprops
+from skimage.color import label2rgb
 import numpy as np
 from pathlib import Path
-from backend.segmentation import OpenModel, SegmentImage, PostSegment
+from backend.segment_lite import SmartInterpreter, PostSegment
 from backend.watershed import Watershed, PostProcess
+import matplotlib.pyplot as plt
+
+from time import time
 
 
 class PipelineWidget(QFrame):
     def __init__(self):
         super().__init__()
-        modelPath = Path(r"assets\trainedModel")
-        self._model = OpenModel(modelPath)
+
+        self._interpreter = SmartInterpreter(Path(r"assets\model.tflite"))
 
         self._fileLabel = QLabel("Browse for file...")
-        browseButton = QPushButton("Browse")
-        browseButton.clicked.connect(self.BrowseForFile)
+        self._browseButton = QPushButton("Browse")
+        self._browseButton.clicked.connect(self.BrowseForFile)
 
         layoutA = QVBoxLayout()
         layoutA.setAlignment(Qt.AlignTop)
@@ -32,39 +32,39 @@ class PipelineWidget(QFrame):
         layoutC = QGridLayout()
 
         layoutB.addWidget(self._fileLabel)
-        layoutB.addWidget(browseButton)
+        layoutB.addWidget(self._browseButton)
         layoutA.addLayout(layoutB)
 
         self._originalImageWidget = ImageWidget("Original")
-        self._segmentedImageWidget = ImageWidget("Segmented")
-        self._distanceTransformImageWidget = ImageWidget("Distance Transform")
-        self._minimaImageWidget = ImageWidget("Local Maxima")
+        self._segmentedImageWidget = ImageWidget("NN Output")
+        self._postSegmentWidget = ImageWidget("Threshold Segmentation")
+        self._minimaImageWidget = ImageWidget("Watershed Initializers")
         self._watershedImageWidget = ImageWidget("Watershed Separation")
-        self._finalImageWidget = ImageWidget("Post Processing")
+        self._finalImageWidget = ImageWidget("Post Processed")
 
         self._thresholdSlider = LabeledSlider("Threshold", self.UpdateSegmentationPost, 50)
+        self._dustSegmentation = LabeledSpinBox("Morphological Opening (Dust Removal)", self.UpdateSegmentationPost, 1)
 
-        self._fgWatershedSlider = LabeledSlider("Opacity", self.UpdateWidgets, 100)
-        self._fgFinalSlider = LabeledSlider("Opacity", self.UpdateWidgets, 20)
+        self._centerThreshold = LabeledSpinBox("Threshold", self.UpdateWatershedRaw, 0.9, True)
+        self._dustWatershed = LabeledSpinBox("Morphological Opening (Dust Removal)", self.UpdateWatershedRaw, 1)
+        self._watershedLabelsCheckbox = Checkbox("Show Labels", self.UpdateWatershedPost, True)
 
-        self._holesCheckbox = QCheckBox("Fill Holes")
-        self._holesCheckbox.stateChanged.connect(self.UpdateSegmentationPost)
-
-        self._separationSpinBox = LabeledSpinBox("Minimum Separation", self.UpdateWatershedRaw, 20)
+        self._fgFinalSlider = LabeledSlider("Opacity", self.UpdateFinalPost, 20)
+        self._finalLabelsCheckbox = Checkbox("Show Labels", self.UpdateFinalPost, True)
 
         layoutC.addWidget(self._originalImageWidget, 0, 0)
 
         layoutC.addWidget(self._segmentedImageWidget, 0, 1)
-        layoutC.addWidget(self._thresholdSlider, 1, 1)
-        layoutC.addWidget(self._holesCheckbox, 2, 1)
 
-        layoutC.addWidget(self._distanceTransformImageWidget, 0, 2)
+        layoutC.addWidget(self._postSegmentWidget, 0, 2)
+        layoutC.addWidget(self._thresholdSlider, 1, 2)
+        layoutC.addWidget(self._dustSegmentation, 2, 2)
 
         layoutC.addWidget(self._minimaImageWidget, 0, 3)
-        layoutC.addWidget(self._separationSpinBox, 1, 3)
+        layoutC.addWidget(self._centerThreshold, 1, 3)
+        layoutC.addWidget(self._dustWatershed, 2, 3)
 
         layoutC.addWidget(self._watershedImageWidget, 0, 4)
-        layoutC.addWidget(self._fgWatershedSlider, 1, 4)
 
         self.cullSlider = LabeledSlider("Border Removal", self.UpdateFinalRaw, 0.75)
         self.smallObjectsSpinBox = LabeledSpinBox("Area Cutoff", self.UpdateFinalRaw, 100)
@@ -92,46 +92,67 @@ class PipelineWidget(QFrame):
 
         self.setLayout(layoutA)
 
-        self.UpdateOriginalRaw(Image.open(r"C:\Users\jonoj\Documents\ML\ch5f12a.jpg"))
+        self.SetAllVisible(False)
+
+        self.OpenFile(
+            r"C:\Users\jonoj\Documents\ML\AugmentedData\OrganoID_augment_2021_06_29_23_46_50\raw\testing\images\XY081.png")
+
+    def SetAllVisible(self, visible):
+        for a in self.children():
+            if isinstance(a, QWidget) and a != self._browseButton and a != self._fileLabel:
+                a.setVisible(visible)
 
     def BrowseForFile(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Browse for Image")
         if filename:
-            self._fileLabel.setText(filename)
-            self.UpdateOriginalRaw(Image.open(filename))
+            self.OpenFile(filename)
+
+    def OpenFile(self, filename):
+        self._fileLabel.setText(filename)
+        self.UpdateOriginalRaw(Image.open(filename))
 
     def UpdateOriginalRaw(self, original: Image):
+        if not self._originalImageWidget.isVisible():
+            self.SetAllVisible(True)
+
         self._originalSize = original.size
         if original.mode == 'I' or original.mode == 'I;16':
-            original = original.point(lambda x: x * (1 / 255))
+            original = original.point(lambda x: x * (1 / 255)).convert(mode='L')
         self._originalImageRaw = np.array(original)
         self.UpdateOriginalPost()
 
     def UpdateOriginalPost(self):
         self._originalImagePost = self._originalImageRaw
+        self._originalImageWidget.SetImage(self._originalImagePost, self._originalImageRaw)
         self.UpdateSegmentationRaw()
 
     def UpdateSegmentationRaw(self):
-        inputShape = self._model.layers[0].input_shape[0]
-        preImage = Image.fromarray(self._originalImagePost).resize(inputShape[1:3]).convert(mode="L")
-        imagePrepared = np.reshape(np.array(preImage), [1] + list(inputShape[1:]))
-        self._segmentedImageRaw = SegmentImage(imagePrepared, self._model)
+        image = np.array(
+            Image.fromarray(self._originalImagePost).resize(self._interpreter.inputShape).convert(mode="L"))
+        self._segmentedImageRaw = self._interpreter.Predict(image)
+        self._segmentedImageWidget.SetImage(
+            (plt.get_cmap("hot")(self._segmentedImageRaw)[:, :, :3] * 255).astype(np.uint8),
+            self._originalImageRaw)
         self.UpdateSegmentationPost()
 
     def UpdateSegmentationPost(self):
         self._segmentedImagePost = PostSegment(self._segmentedImageRaw, self._thresholdSlider.value(),
-                                               self._holesCheckbox.checkState())
+                                               self._dustSegmentation.value())
 
+        self._postSegmentWidget.SetImage(self._segmentedImagePost, self._originalImageRaw)
         self.UpdateWatershedRaw()
 
     def UpdateWatershedRaw(self):
         self._dtImage, self._minimaImage, self._watershedImageRaw = Watershed(self._segmentedImagePost,
-                                                                              self._separationSpinBox.value())
-
+                                                                              self._segmentedImageRaw,
+                                                                              self._centerThreshold.value(),
+                                                                              self._dustWatershed.value())
         self.UpdateWatershedPost()
 
     def UpdateWatershedPost(self):
         self._watershedImagePost = self._watershedImageRaw
+        self._minimaImageWidget.SetImage(self._minimaImage > 0, self._originalImageRaw)
+        self._watershedImageWidget.SetImage(self._watershedImagePost, self._originalImageRaw, label=True)
         self.UpdateFinalRaw()
 
     def UpdateFinalRaw(self):
@@ -141,39 +162,39 @@ class PipelineWidget(QFrame):
 
     def UpdateFinalPost(self):
         self._finalImagePost = self._finalImageRaw
-        self.UpdateWidgets()
-
-    def UpdateWidgets(self):
-        self._originalImageWidget.SetImage(self._originalImagePost, self._originalImageRaw)
-        self._segmentedImageWidget.SetImage(self._segmentedImagePost, self._originalImageRaw)
-        self._watershedImageWidget.SetImage(self._watershedImagePost, self._originalImageRaw,
-                                            imageAlpha=self._fgWatershedSlider.value(), label=True)
         self._finalImageWidget.SetImage(self._finalImagePost, self._originalImageRaw,
                                         imageAlpha=self._fgFinalSlider.value(), label=True)
-
-        self._distanceTransformImageWidget.SetImage(self._dtImage, self._originalImageRaw, autoContrast=True)
-        self._minimaImageWidget.SetImage(self._minimaImage, self._originalImageRaw, label=True)
 
 
 class ImageWidget(QWidget):
     def __init__(self, title):
         super().__init__()
-
+        self._title = title
         layout = QVBoxLayout()
         self._imageLabel = QLabel()
+        self._imageLabel.setAlignment(Qt.AlignCenter)
         layout.addWidget(self._imageLabel)
         title = QLabel("<b>" + title + "</b>")
         title.setStyleSheet("""background-color: rgb(200, 200, 200)""")
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
+        self._saveButton = QPushButton("Save Image...")
+        layout.addWidget(self._saveButton)
+        self._saveButton.clicked.connect(self.SaveRaw)
         self.setLayout(layout)
 
         self._labels = []
 
-        self.SetImage(None)
         self._rawImage: Optional[QPixmap] = None
         self._imageLabel.setMinimumSize(256, 256)
         self._imageLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.SetImage(None)
+
+    def SaveRaw(self):
+        if self._rawImage:
+            filepath, _ = QFileDialog.getSaveFileName(self, "Save To...", filter="Image File (*.png *.jpg *.tif)")
+            if filepath:
+                self.pixmapWithLabels(self._rawImage.size()).save(filepath)
 
     def SetImage(self, image: np.ndarray = None, originalImage: np.ndarray = None, imageAlpha=1, label=False,
                  autoContrast=False):
@@ -181,34 +202,34 @@ class ImageWidget(QWidget):
             preparedImage = Image.fromarray(np.zeros((512, 512))).convert(mode="L")
         else:
             height, width = originalImage.shape[:2]
-            preparedImage = np.array(Image.fromarray(image).resize((width, height), resample=Image.NEAREST))
+            preparedImage = Image.fromarray(image).resize((width, height), resample=Image.NEAREST)
             if autoContrast:
-                preparedImage = np.array(ImageOps.autocontrast(Image.fromarray(preparedImage).convert(mode="L")))
+                preparedImage = ImageOps.autocontrast(preparedImage)
             self._labels = []
             if label:
                 originalImage = np.array(Image.fromarray(originalImage).convert(mode="RGB"))
-                preparedImage = skimage.color.label2rgb(preparedImage, originalImage, bg_label=0, alpha=imageAlpha,
-                                                        image_alpha=1)
+                preparedImage = label2rgb(np.array(preparedImage), originalImage, bg_label=0, alpha=imageAlpha,
+                                          image_alpha=1)
                 preparedImage = Image.fromarray((preparedImage * 255).astype(np.uint8))
-                props = skimage.measure.regionprops(image)
+                props = regionprops(image)
                 for prop in props:
                     y, x = prop.centroid
                     oldHeight, oldWidth = image.shape
                     x, y = self.Transform((x, y), QSize(width, height), QSize(oldWidth, oldHeight))
                     self._labels.append(((x, y), str(prop.label)))
-            else:
-                preparedImage = Image.fromarray(preparedImage).convert(mode="L")
 
         qt = ImageQt.ImageQt(preparedImage)
         self._rawImage = QPixmap.fromImage(qt)
-
         self.doResize()
 
     def resizeEvent(self, event) -> None:
         self.doResize()
 
     def doResize(self):
-        pixmap = self._rawImage.scaled(self.size(), Qt.KeepAspectRatio)
+        self._imageLabel.setPixmap(self.pixmapWithLabels(self.size()))
+
+    def pixmapWithLabels(self, size: QSize):
+        pixmap = self._rawImage.scaled(size, Qt.KeepAspectRatio)
         painter = QPainter()
 
         painter.begin(pixmap)
@@ -224,7 +245,7 @@ class ImageWidget(QWidget):
 
         painter.end()
 
-        self._imageLabel.setPixmap(pixmap)
+        return pixmap
 
     @staticmethod
     def Transform(pt, newSize, oldSize):
@@ -255,10 +276,13 @@ class LabeledSlider(QWidget):
 
 
 class LabeledSpinBox(QWidget):
-    def __init__(self, text, delegate, initialValue):
+    def __init__(self, text, delegate, initialValue, double=False):
         super().__init__()
-
-        self._sizeBox = QSpinBox()
+        if double:
+            self._sizeBox = QDoubleSpinBox()
+            self._sizeBox.setDecimals(5)
+        else:
+            self._sizeBox = QSpinBox()
         self._sizeBox.setMinimum(0)
         self._sizeBox.setMaximum(9999)
         self._sizeBox.setValue(initialValue)
@@ -270,3 +294,11 @@ class LabeledSpinBox(QWidget):
 
     def value(self):
         return self._sizeBox.value()
+
+
+class Checkbox(QCheckBox):
+    def __init__(self, text, delegate, initialValue):
+        super().__init__()
+        self.setText(text)
+        self.setChecked(initialValue)
+        self.changeEvent.connect(delegate)

@@ -1,14 +1,12 @@
 from cx_Freeze import setup, Executable
-import skimage
 import scipy
-import sklearn
+import skimage
 from os import path
-
 
 files = {"include_files": ['assets/',
                            path.dirname(skimage.__file__),
-                           path.dirname(scipy.__file__),
-                           path.dirname(sklearn.__file__)]}
+                           path.dirname(scipy.__file__)],
+         "excludes": ["tensorflow"]}
 setup(name="OrganoID",
       version="0.1",
       author="Jonathan Matthews",

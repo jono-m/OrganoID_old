@@ -1,3 +1,6 @@
+import os
+os.environ['PATH'] += os.environ['CUDA_PATH'] + r"\bin;"
+
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate
 from tensorflow.keras.models import Model
@@ -23,7 +26,7 @@ def CreateModel(dropoutRate, learningRate, imageSize):
     print("\tBuilding model pipeline...")
     inputs = Input((imageSize[0], imageSize[1], 1))
 
-    startSize = 16
+    startSize = 8
 
     currentLayer = inputs
     contractingLayers = []
@@ -66,10 +69,7 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, testingI
     print("-----------------------")
     print("Building model...")
 
-    strategy = tf.distribute.MirroredStrategy()
-    print('Number of devices: ' + str(strategy.num_replicas_in_sync))
-    with strategy.scope():
-        model = CreateModel(dropout_rate, learning_rate, imageSize)
+    model = CreateModel(dropout_rate, learning_rate, imageSize)
     model.summary()
     print("\tRequired memory: " + str(keras_model_memory_usage_in_bytes(model, batch_size=batch_size)))
     print("\tDone!")
@@ -90,14 +90,14 @@ def FitModel(trainingImagesPath: Path, trainingSegmentationsPath: Path, testingI
     print("\tDone!")
 
     print(patience)
-    earlyStopper = EarlyStopping(patience=patience, verbose=1, restore_best_weights=True)
+    earlyStopper = EarlyStopping(patience=patience, verbose=1, restore_best_weights=True, monitor='val_MeanIOU', mode='max')
     outputPath.mkdir(parents=True, exist_ok=True)
     print("\tFitting model...", flush=True)
     model.fit(DataGenerator(trainingImagePaths, trainingSegmentationPaths, imageSize, batch_size),
               validation_data=DataGenerator(testingImagePaths, testingSegmentationPaths, imageSize, batch_size),
               verbose=1,
               epochs=epochs,
-              callbacks=[PlotCallback(Path(r"C:\Users\jonoj\Documents\ML\AugmentedData\OrganoID_augment_2021_06_24_10_01_40\raw\training\images\337.png"), outputPath / "modelLearningEx"), earlyStopper])
+              callbacks=[PlotCallback(outputPath / "modelEpochs"), earlyStopper])
     print("\tDone!", flush=True)
 
     print("\tSaving model...")

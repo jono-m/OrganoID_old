@@ -58,13 +58,15 @@ def BlendImage(image: Image, segmentation: Image):
     return composite
 
 
-def SegmentImage(image: np.ndarray, model):
-    segmented = model.predict(image)[0, :, :, 0]
+def PrepareImage(image: Image, model):
+    if image.mode == 'I' or image.mode == 'I;16':
+        image = image.point(lambda x: x * (1 / 255))
+    inputShape = model.layers[0].input_shape[0]
+    preImage = image.resize(inputShape[1:3]).convert(mode="L")
+    imagePrepared = np.reshape(np.array(preImage), [1] + list(inputShape[1:]))
+    return imagePrepared
+
+
+def SegmentImage(image: Image, model):
+    segmented = model.predict(PrepareImage(image, model))[0, :, :, 0]
     return segmented
-
-
-def PostSegment(image: np.ndarray, threshold: float, fillHoles: bool):
-    image = image > threshold
-    if fillHoles:
-        image = ndimage.binary_fill_holes(image)
-    return image

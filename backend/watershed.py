@@ -1,14 +1,11 @@
 import numpy
-import scipy.ndimage
-from PIL import Image
+from time import time
 import skimage.measure
+import skimage.segmentation as segmentation
+import skimage.morphology as morphology
 import numpy as np
 import math
 import scipy.ndimage as ndimage
-from scipy.spatial import KDTree
-import skimage.segmentation as segmentation
-import matplotlib.pyplot as plt
-import skimage.morphology as morphology
 
 
 def detect_local_minima(arr, structure):
@@ -25,48 +22,31 @@ def createCircle(diameter):
     shape = np.zeros((effectiveDiameter, effectiveDiameter), dtype=bool)
     for x in range(effectiveDiameter):
         for y in range(effectiveDiameter):
-            distance = dist(x, y, center, center)
+            distance = dist((x, y), (center, center))
             if distance <= effectiveDiameter / 2:
                 shape[x, y] = True
     return shape
 
 
-def dist(x1, y1, x2, y2):
-    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+def dist(p, q):
+    return math.hypot(p[0] - q[0], p[1] - q[1])
 
 
-def mergeClose(image: np.ndarray, separation):
-    points = np.argwhere(image)
-    newImage = np.zeros(image.shape)
-
-    while True:
-        merged = False
-        for ia in range(points.shape[0]):
-            for ib in range(ia + 1, points.shape[0]):
-                pointA = points[ia, :]
-                pointB = points[ib, :]
-                if dist(pointA[0], pointA[1], pointB[0], pointB[1]) <= separation:
-                    merged = True
-                    points = np.delete(points, [ia, ib], 0)
-                    points = np.append(points, [(pointA + pointB) / 2], 0)
-                    break
-            if merged:
-                break
-
-        if not merged:
-            break
-
-    points = numpy.round_(points).astype(int)
-    newImage[tuple(points.transpose())] = 1
-    return newImage
+def findCenter(raw: np.ndarray, centerThreshold: float):
+    return raw > centerThreshold
 
 
-def doWatershed(image: np.ndarray, separation):
+def doWatershed(image: np.ndarray, raw: np.ndarray, centerThreshold: float, separation):
     distance = ndimage.distance_transform_edt(image)
-    localMinima = detect_local_minima(-distance, ndimage.generate_binary_structure(2, 2))
-    localMinima = mergeClose(localMinima, separation)
+    localMinima = findCenter(raw, centerThreshold)
+    if int(separation) > 0:
+        localMinima = ndimage.binary_opening(localMinima, iterations=int(separation))
     markers, _ = ndimage.label(localMinima)
     labels = segmentation.watershed(-distance, markers, mask=image)
+    unsplit = np.logical_and(image, labels == 0)
+    unsplit_labeled, _ = ndimage.label(unsplit)
+    unsplit_labeled[unsplit_labeled > 0] += labels.max()
+    labels = labels + unsplit_labeled
     return distance, markers, labels
 
 
@@ -112,8 +92,8 @@ def clearBorders(image: np.ndarray, borderCutoff, border_thickness):
     return image
 
 
-def Watershed(segmented: np.ndarray, separation=20):
-    return doWatershed(segmented, separation)
+def Watershed(segmented: np.ndarray, raw, centerThreshold, separation):
+    return doWatershed(segmented, raw, centerThreshold, separation)
 
 
 def PostProcess(segmented: np.ndarray, areaCutoff, borderCutoff):
