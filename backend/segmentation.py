@@ -1,20 +1,13 @@
 from pathlib import Path
-import tensorflow as tf
 from PIL import Image
-import numpy as np
-import scipy.ndimage as ndimage
 
 
-def OpenModel(modelPath: Path):
-    model = tf.keras.models.load_model(str(modelPath.absolute()), compile=False)
-    model.compile(loss=tf.keras.losses.binary_crossentropy)
-    return model
-
-
-def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
+def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU, threshold):
     if not useGPU:
         import os
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+    from segment_lite import SmartInterpreter
 
     print("-----------------------")
     print("Running segmentation pipeline...")
@@ -23,7 +16,7 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
     print("\tOutput directory: " + str(outputPath))
 
     print("\tLoading model.")
-    model = OpenModel(modelPath)
+    interpreter = SmartInterpreter(modelPath)
     print("\tDone.")
 
     imagePaths = [imagePath for imagePath in imagesPath.iterdir() if imagePath.is_file()]
@@ -36,7 +29,7 @@ def DoSegmentation(imagesPath: Path, outputPath: Path, modelPath: Path, useGPU):
         print("\tSegmenting image " + str(imageIndex + 1) + "/" + str(len(imagePaths)))
 
         image = Image.open(imagePath)
-        segmentedImage = SegmentImage(image, model)
+        segmentedImage = Image.fromarray(interpreter.Predict(PrepareImage(image, interpreter.inputShape)) > threshold)
 
         # Save segmentation
         segmentedFilename = outputPath / ("seg_" + imagePaths[imageIndex].stem + imagePaths[imageIndex].suffix)
@@ -58,13 +51,11 @@ def BlendImage(image: Image, segmentation: Image):
     return composite
 
 
-def PrepareImage(image: Image, model):
+def PrepareImage(image: Image, shape):
     if image.mode == 'I' or image.mode == 'I;16':
         image = image.point(lambda x: x * (1 / 255))
-    inputShape = model.layers[0].input_shape[0]
-    preImage = image.resize(inputShape[1:3]).convert(mode="L")
-    imagePrepared = np.reshape(np.array(preImage), [1] + list(inputShape[1:]))
-    return imagePrepared
+    prepared = image.resize(shape).convert(mode="L")
+    return prepared
 
 
 def SegmentImage(image: Image, model):

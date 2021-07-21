@@ -6,20 +6,23 @@ import typing
 
 class JobSettings:
     def __init__(self):
-        parser = argparse.ArgumentParser(
+        self._parser = argparse.ArgumentParser(
             description="Neural network segmentation and tracking of organoid microscopy images.")
 
-        subparsers = parser.add_subparsers(dest="subparser_name")
+        subparsers = self._parser.add_subparsers(dest="subparser_name")
 
-        self.trackingSubparser = subparsers.add_parser("run", help="Pipeline execution commands.")
+        self.segmentSubparser = subparsers.add_parser("segment", help="Pipeline execution commands.")
 
-        self.trackingSubparser.add_argument("modelPath", help="Path to trained OrganoID model", type=pathlib.Path)
-        self.trackingSubparser.add_argument("inputPath", help="Path to images to analyze.", type=pathlib.Path)
-        self.trackingSubparser.add_argument("outputPath", help="Path where analyzed images and data will be saved.",
-                                            type=pathlib.Path)
-        self.trackingSubparser.add_argument("-G", "--useGPU", dest="useGPU", nargs='?', default=False,
-                                            type=bool,
-                                            help="Set this to True if the GPU should be used")
+        self.segmentSubparser.add_argument("modelPath", help="Path to trained OrganoID model", type=pathlib.Path)
+        self.segmentSubparser.add_argument("inputPath", help="Path to images to analyze.", type=pathlib.Path)
+        self.segmentSubparser.add_argument("outputPath", help="Path where analyzed images and data will be saved.",
+                                           type=pathlib.Path)
+        self.segmentSubparser.add_argument("-T", "--threshold", dest="threshold", nargs='?', default=0.5,
+                                           type=float,
+                                           help="Threshold for segmentation (0-1)")
+        self.segmentSubparser.add_argument("-G", "--useGPU", dest="useGPU", nargs='?', default=False,
+                                           type=bool,
+                                           help="Set this to True if the GPU should be used")
 
         self.augmentSubparser = subparsers.add_parser("augment",
                                                       help="Augment images for training.")
@@ -54,12 +57,16 @@ class JobSettings:
                                          type=pathlib.Path,
                                          help="Path where the trained model will be saved.")
         self.trainSubparser.add_argument("inputPath", help="Path to image and segmentation data. "
-                                                           "Directory with subfolders images/ and segmentations/",
+                                                           "Directory with subfolders training/ and testing/ with "
+                                                           "respective subfolders images/ and segmentations/",
                                          type=pathlib.Path)
 
-        self.args = parser.parse_args()
+        self.args = self._parser.parse_args()
 
         self.jobID = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+
+    def Threshold(self) -> float:
+        return self.args.threshold
 
     def Epochs(self) -> int:
         return self.args.epochs
@@ -88,49 +95,14 @@ class JobSettings:
     def GetLogPath(self):
         return self.args.logPath
 
-    def ImagesPath(self, critical=True) -> pathlib.Path:
-        path = self.args.inputPath / "images"
+    def InputPath(self, subPath=None, critical=True) -> pathlib.Path:
+        if subPath is not None:
+            path = self.args.inputPath / subPath
+        else:
+            path = self.args.inputPath
         if critical and not path.is_dir():
-            self.trainSubparser.error(
-                "Image path does not exist or is not a directory:  '%s'" % str(path))
-
-        return path.resolve()
-
-    def SegmentationsPath(self, critical=True) -> pathlib.Path:
-        path = self.args.inputPath / "segmentations"
-        if critical and not path.is_dir():
-            self.trainSubparser.error(
-                "Segmentation path does not exist or is not a directory:  '%s'" % str(path))
-        return path.resolve()
-
-    def TrainingImagesPath(self, critical=True) -> pathlib.Path:
-        path = self.args.inputPath / "training" / "images"
-        if critical and not path.is_dir():
-            self.trainSubparser.error(
-                "Image path does not exist or is not a directory:  '%s'" % str(path))
-
-        return path.resolve()
-
-    def TrainingSegmentationsPath(self, critical=True) -> pathlib.Path:
-        path = self.args.inputPath / "training" / "segmentations"
-        if critical and not path.is_dir():
-            self.trainSubparser.error(
-                "Segmentation path does not exist or is not a directory:  '%s'" % str(path))
-        return path.resolve()
-
-    def TestingImagesPath(self, critical=True):
-        path = self.args.inputPath / "testing" / "images"
-        if critical and not path.is_dir():
-            self.trainSubparser.error(
-                "Testing image path does not exist or is not a directory:  '%s'" % str(path))
-
-        return path.resolve()
-
-    def TestingSegmentationsPath(self, critical=True):
-        path = self.args.inputPath / "testing" / "segmentations"
-        if critical and not path.is_dir():
-            self.trainSubparser.error(
-                "Testing segmentations path does not exist or is not a directory:  '%s'" % str(path))
+            self._parser.error(
+                "Path does not exist or is not a directory:  '%s'" % str(path))
 
         return path.resolve()
 
