@@ -1,5 +1,3 @@
-import numpy
-from time import time
 import skimage.measure
 import skimage.segmentation as segmentation
 import skimage.morphology as morphology

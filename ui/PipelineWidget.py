@@ -8,8 +8,8 @@ from skimage.measure import regionprops
 from skimage.color import label2rgb
 import numpy as np
 from pathlib import Path
-from backend.segment_lite import SmartInterpreter, PostSegment
-from backend.watershed import Watershed, PostProcess
+from training.Segmenter import Segmenter, PostSegment
+from training.watershed import Watershed, PostProcess
 import matplotlib.pyplot as plt
 
 from time import time
@@ -19,7 +19,7 @@ class PipelineWidget(QFrame):
     def __init__(self):
         super().__init__()
 
-        self._interpreter = SmartInterpreter(Path(r"assets\model.tflite"))
+        self._interpreter = Segmenter(Path(r"assets\model.tflite"))
 
         self._fileLabel = QLabel("Browse for file...")
         self._browseButton = QPushButton("Browse")
@@ -301,4 +301,4 @@ class Checkbox(QCheckBox):
         super().__init__()
         self.setText(text)
         self.setChecked(initialValue)
-        self.changeEvent.connect(delegate)
+        self.stateChanged.connect(delegate)

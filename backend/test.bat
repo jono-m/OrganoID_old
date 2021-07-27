@@ -1,1 +1,0 @@
-python organoID.py segment C:\Users\jonoj\Repositories\OrganoID\assets\model.tflite C:\Users\jonoj\Documents\ML\TestData\images C:\Users\jonoj\Documents\ML\Segmentations
