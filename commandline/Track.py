@@ -22,7 +22,7 @@ class Track(Program):
         parser.add_argument("--label", action="store_true", help="Draw text on images.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
-        from backend.ImageManager import LoadImages, SaveImage, LabelToRGB, SaveImages, ShowImage, EmphasizeLabeled
+        from backend.ImageManager import LoadImages, SaveImages, ShowImage, EmphasizeLabeled
         from backend.Tracker import Tracker
         images = LoadImages(parserArgs.imagesPath, size=[512, 512])
 
