@@ -1,7 +1,6 @@
 from commandline.Program import Program
 import argparse
 import pathlib
-import numpy as np
 
 
 class PostProcess(Program):

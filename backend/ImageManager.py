@@ -1,4 +1,4 @@
-from typing import Union, List, Tuple
+from typing import Union, List
 from PIL import Image, ImageFont, ImageDraw
 from pathlib import Path
 import numpy as np
@@ -72,7 +72,7 @@ def SaveImage(image: np.ndarray, path: Path):
     Image.fromarray(image).save(path)
 
 
-def LabelToRGB(image: np.ndarray, overlay=False):
+def LabelToRGB(image: np.ndarray):
     labeled = (label2rgb(image, bg_label=0) * 255).astype(np.uint8)
 
     return labeled
@@ -105,5 +105,5 @@ def EmphasizeLabeled(labels: np.ndarray, labelColor=None, outlineColor=None):
 
 def ComputeOutline(image: np.ndarray):
     edge = sobel(image, mode="constant")
-    coords = np.argwhere(edge > 0.5)
+    coords = np.argwhere(np.greater(edge, 0.5))
     return coords
