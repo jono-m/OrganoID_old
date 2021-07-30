@@ -36,7 +36,7 @@ class ModelDataGenerator(tf.keras.utils.Sequence):
         imageData = np.zeros([len(imagePaths), self.imageSize[0], self.imageSize[1], 1], dtype=np.uint8)
 
         for imageIndex in range(len(imagePaths)):
-            image = next(LoadImages(imagePaths[imageIndex], size=self.imageSize)).image
+            image = next(LoadImages(imagePaths[imageIndex], size=self.imageSize, mode="L")).image
             if self.contrast:
                 image = Contrast(image)
             imageData[imageIndex, :, :, 0] = image
