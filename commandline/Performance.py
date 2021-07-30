@@ -1,3 +1,4 @@
+import numpy as np
 from commandline.Program import Program
 import argparse
 import pathlib
@@ -29,8 +30,6 @@ class Performance(Program):
         from backend.Segmenter import Segmenter
         from backend.ImageManager import LoadImages
         import matplotlib.pyplot as plt
-        import numpy as np
-
         images = LoadImages(parserArgs.inputPath / "images", (512, 512), mode="L")
         segmentations = LoadImages(parserArgs.inputPath / "segmentations", (512, 512), mode="1")
 
