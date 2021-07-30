@@ -38,6 +38,6 @@ class Track(Program):
                         tracker.GetTrackedImages()]
 
         if parserArgs.show:
-            ShowImage(outputImages)
+            [ShowImage(image) for image in outputImages]
         if parserArgs.outputPath is not None and parserArgs.gif:
             SaveImages(outputImages, parserArgs.outputPath / self.JobName() / "trackResults.gif")

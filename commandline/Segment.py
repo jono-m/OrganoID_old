@@ -46,7 +46,8 @@ class Segment(Program):
             if parserArgs.threshold:
                 outputImages.append(("threshold", segmented_raw > parserArgs.threshold, None))
             if parserArgs.heat:
-                outputImages.append(("heat", (plt.get_cmap("hot")(segmented_raw)[:, :, :3] * 255).astype(np.uint8), None))
+                outputImages.append(
+                    ("heat", (plt.get_cmap("hot")(segmented_raw)[:, :, :3] * 255).astype(np.uint8), None))
             if parserArgs.raw:
                 outputImages.append(("raw", segmented_raw, ".tiff"))
 

@@ -12,12 +12,13 @@ def Label(image: np.ndarray, foregroundThreshold: int, watershedThreshold: int):
         # Do an opening to remove small debris.
         initializerImage = ndimage.binary_opening(foregroundImage > watershedThreshold)
         markers, _ = ndimage.label(initializerImage)
-        # The negated raw output from the CNN is the heightmap for watershed. Organoid borders will be slightly higher than
-        # their centers (detected in the initializer image), and so will form the watershed boundary.
+        # The negated raw output from the CNN is the heightmap for watershed. Organoid borders will be slightly higher
+        # than their centers (detected in the initializer image), and so will form the watershed boundary.
         heightmap = -foregroundImage
         labels = segmentation.watershed(heightmap, markers, mask=foregroundMask)
-        # Some organoids will be lost during the watershed if their initializers were clipped out or too small. Watershed
-        # should only really split organoids that are touching, so we want to make sure that the original mask is preserved.
+        # Some organoids will be lost during the watershed if their initializers were clipped out or too small.
+        # Watershed should only really split organoids that are touching, so we want to make sure that the original
+        # mask is preserved.
         # First, find all regions that were lost.
         unsplit = np.logical_and(foregroundMask, labels == 0)
         # Label the lost regions

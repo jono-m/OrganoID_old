@@ -1,5 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate, BatchNormalization
+from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate, \
+    BatchNormalization
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, Callback
 from pathlib import Path

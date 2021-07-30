@@ -78,12 +78,6 @@ def LabelToRGB(image: np.ndarray):
     return labeled
 
 
-def LabelToColor(image: np.ndarray, color):
-    colored = np.zeros(image.shape + [3], dtype=np.uint8)
-    colored[image > 0] = color
-    return colored
-
-
 def EmphasizeLabeled(labels: np.ndarray, labelColor=None, outlineColor=None):
     pilImage = Image.fromarray(np.zeros_like(labels)).convert(mode="RGB")
     drawer = ImageDraw.Draw(pilImage)
