@@ -1,5 +1,4 @@
 from commandline.Program import Program
-from backend.SplitData import SplitData
 import argparse
 import pathlib
 
@@ -22,5 +21,6 @@ class Split(Program):
                             help="Fraction of images to split for testing (0.0-1.0).", type=float)
 
     def RunProgram(self, parserArgs: argparse.Namespace):
+        from backend.SplitData import SplitData
         SplitData((parserArgs.inputPath / "images").iterdir(), (parserArgs.inputPath / "segmentations").iterdir(),
                   parserArgs.testSplit, parserArgs.outputPath / self.JobName())

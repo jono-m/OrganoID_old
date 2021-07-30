@@ -1,7 +1,6 @@
 from commandline.Program import Program
 import argparse
 import pathlib
-import numpy as np
 
 
 class Segment(Program):
@@ -30,6 +29,7 @@ class Segment(Program):
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.ImageManager import LoadImages, SaveImage, ShowImage
         from backend.Segmenter import Segmenter
+        import numpy as np
         import matplotlib.pyplot as plt
         images = LoadImages(parserArgs.imagesPath, size=[512, 512], mode="L")
         segmenter = Segmenter(parserArgs.modelPath)
