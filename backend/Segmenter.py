@@ -1,4 +1,9 @@
-import tflite_runtime.interpreter as tflite
+try:
+    from tflite_runtime.interpreter import Interpreter
+except ImportError as e:
+    import tensorflow as tf
+
+    Interpreter = tf.lite.Interpreter
 from pathlib import Path
 from backend.ImageManager import Contrast
 import numpy as np
@@ -6,7 +11,7 @@ import numpy as np
 
 class Segmenter:
     def __init__(self, modelPath: Path):
-        self._interpreter = tflite.Interpreter(model_path=str(modelPath.absolute()))
+        self._interpreter = Interpreter(model_path=str(modelPath.absolute()))
         self._inputIndex = self._interpreter.get_input_details()[0]['index']
         self._inputShape = self._interpreter.get_input_details()[0]['shape']
         self._output_index = self._interpreter.get_output_details()[0]['index']
