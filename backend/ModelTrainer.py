@@ -8,6 +8,7 @@ from backend.ModelDataGenerator import ModelDataGenerator
 
 
 class ModelTrainer:
+    # Based on U-Net
     def __init__(self, inputSize, dropoutRate, startSize):
         inputs = Input((inputSize[0], inputSize[1], 1))
 

@@ -5,7 +5,6 @@ except ImportError as e:
 
     Interpreter = tf.lite.Interpreter
 from pathlib import Path
-from backend.ImageManager import Contrast
 import numpy as np
 
 
@@ -17,9 +16,7 @@ class Segmenter:
         self._output_index = self._interpreter.get_output_details()[0]['index']
         self._interpreter.allocate_tensors()
 
-    def Segment(self, image: np.ndarray, contrast=True) -> np.ndarray:
-        if contrast:
-            image = Contrast(image)
+    def Segment(self, image: np.ndarray) -> np.ndarray:
         image = np.reshape(image, self._inputShape).astype(np.float32)
         self._interpreter.set_tensor(self._inputIndex, image)
         self._interpreter.invoke()

@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from backend.ImageManager import LoadImages, Contrast
+from backend.ImageManager import LoadImages, ContrastOp
 from pathlib import Path
 
 
@@ -36,10 +36,10 @@ class ModelDataGenerator(tf.keras.utils.Sequence):
         imageData = np.zeros([len(imagePaths), self.imageSize[0], self.imageSize[1], 1], dtype=np.uint8)
 
         for imageIndex in range(len(imagePaths)):
-            image = next(LoadImages(imagePaths[imageIndex], size=self.imageSize, mode="L")).image
+            image = next(LoadImages(imagePaths[imageIndex], size=self.imageSize, mode="L"))
             if self.contrast:
-                image = Contrast(image)
-            imageData[imageIndex, :, :, 0] = image
+                image = image.DoOperation(ContrastOp)
+            imageData[imageIndex, :, :, 0] = image.frames[0]
         return imageData
 
     def LoadSegmentations(self, segmentationPaths):
@@ -47,6 +47,6 @@ class ModelDataGenerator(tf.keras.utils.Sequence):
 
         for segmentationIndex in range(len(segmentationPaths)):
             segmentationData[segmentationIndex, :, :, 0] = next(LoadImages(segmentationPaths[segmentationIndex],
-                                                                           size=self.imageSize, mode="1")).image
+                                                                           size=self.imageSize, mode="1")).frames[0]
 
         return segmentationData

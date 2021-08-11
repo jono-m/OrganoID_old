@@ -27,7 +27,7 @@ class Segment(Program):
         parser.add_argument("--show", action="store_true", help="If set, the output images will be displayed.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
-        from backend.ImageManager import LoadImages, SaveImage, ShowImage
+        from backend.ImageManager import LoadImages, SaveImage, ShowImage, ContrastOp, SaveTIFFStack
         from backend.Segmenter import Segmenter
         import numpy as np
         import matplotlib.pyplot as plt
@@ -35,30 +35,40 @@ class Segment(Program):
         segmenter = Segmenter(parserArgs.modelPath)
 
         count = 1
+
+        outputImages = []
+
         for image in images:
             print("Segenting %d: %s" % (count, image.path))
             count += 1
 
-            segmented_raw = segmenter.Segment(image.image)
-
-            outputImages = []
+            segmented_raw = image.DoOperation(ContrastOp).DoOperation(segmenter.Segment)
 
             if parserArgs.threshold:
-                outputImages.append(("threshold", segmented_raw > parserArgs.threshold, None))
+                outputImages.append(("threshold", segmented_raw.DoOperation(lambda x: x > parserArgs.threshold), None))
             if parserArgs.heat:
                 outputImages.append(
-                    ("heat", (plt.get_cmap("hot")(segmented_raw)[:, :, :3] * 255).astype(np.uint8), None))
+                    ("heat",
+                     segmented_raw.DoOperation(lambda x: (plt.get_cmap("hot")(x)[:, :, :3] * 255).astype(np.uint8)),
+                     None))
             if parserArgs.raw:
                 outputImages.append(("raw", segmented_raw, ".tiff"))
 
-            if parserArgs.show:
-                [ShowImage(outputImage) for (_, outputImage, _) in outputImages]
+        if parserArgs.show:
+            for (_, outputImage, _) in outputImages:
+                for frame in outputImage.frames:
+                    ShowImage(frame)
 
-            if parserArgs.outputPath is not None:
-                for name, outputImage, extension in outputImages:
-                    if extension is None:
-                        extension = image.path.suffix
-                    fileName = image.path.stem + "_" + name + extension
-                    savePath = parserArgs.outputPath / self.JobName() / fileName
-                    print(savePath)
-                    SaveImage(outputImage, savePath)
+        if parserArgs.outputPath is not None:
+            for name, outputImage, extension in outputImages:
+                if extension is None:
+                    extension = outputImage.path.suffix
+                if len(outputImage.frames) > 1:
+                    extension = ".tiff"
+                fileName = outputImage.path.stem + "_" + name + extension
+                savePath = parserArgs.outputPath / self.JobName() / fileName
+                print(savePath)
+                if len(outputImage.frames) > 1:
+                    SaveTIFFStack(outputImage.frames, savePath)
+                else:
+                    SaveImage(outputImage.frames[0], savePath)

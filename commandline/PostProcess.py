@@ -18,7 +18,7 @@ class PostProcess(Program):
         parser.add_argument("-T", dest="threshold", default=0.5,
                             type=float,
                             help="Segmentation threshold (0-1).")
-        parser.add_argument("-W", dest="watershedThresh", default=False,
+        parser.add_argument("-W", dest="watershedThresh", default=None,
                             type=float,
                             help="Watershed threshold (0-1).")
         parser.add_argument("-A", dest="minArea", default=20,
@@ -34,32 +34,41 @@ class PostProcess(Program):
         parser.add_argument("--show", action="store_true", help="If set, the output images will be displayed.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
-        from backend.ImageManager import LoadImages, SaveImage, ShowImage, LabelToRGB
+        from backend.ImageManager import LoadImages, SaveImage, ShowImage, LabelToRGB, SaveTIFFStack
         from backend.Label import Label
         from backend.PostProcessing import PostProcess
         images = LoadImages(parserArgs.imagesPath, size=[512, 512])
 
+        outputImages = []
         count = 1
         for image in images:
             print("Processing %d: %s" % (count, image.path))
             count += 1
 
-            labeled = Label(image.image, parserArgs.threshold, parserArgs.watershedThresh)
+            labeled = image.DoOperation(lambda x: Label(x, parserArgs.threshold, parserArgs.watershedThresh))
 
-            postProcessed = PostProcess(labeled, parserArgs.minArea, parserArgs.borderCutoff)
-
-            outputImages = []
+            postProcessed = labeled.DoOperation(lambda x: PostProcess(x, parserArgs.minArea, parserArgs.borderCutoff))
 
             if parserArgs.rgb:
-                outputImages.append(("rgb", LabelToRGB(postProcessed)))
+                outputImages.append(("rgb", postProcessed.DoOperation(LabelToRGB)))
             if parserArgs.raw:
                 outputImages.append(("raw", postProcessed))
 
             if parserArgs.show:
                 [ShowImage(outputImage) for (_, outputImage) in outputImages]
 
-            if parserArgs.outputPath is not None:
-                for name, outputImage in outputImages:
-                    savePath = parserArgs.outputPath / self.JobName() / (
-                            image.path.stem + "_" + name + image.path.suffix)
+        if parserArgs.show:
+            for (_, outputImage, _) in outputImages:
+                for frame in outputImage.frames:
+                    ShowImage(frame)
+
+        if parserArgs.outputPath is not None:
+            for name, outputImage in outputImages:
+                extension = outputImage.path.suffix
+                fileName = outputImage.path.stem + "_" + name + extension
+                savePath = parserArgs.outputPath / self.JobName() / fileName
+                print(savePath)
+                if len(outputImage.frames) > 1:
+                    SaveTIFFStack(outputImage.frames, savePath)
+                else:
                     SaveImage(outputImage, savePath)

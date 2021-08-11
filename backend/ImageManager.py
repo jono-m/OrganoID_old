@@ -1,21 +1,23 @@
-from typing import Union, List
+from typing import Union, List, Callable
 from PIL import Image, ImageFont, ImageDraw
 from pathlib import Path
 import numpy as np
 from skimage.color import label2rgb
-from skimage.measure import regionprops
 from skimage.filters import sobel
+from backend.Tracker import Tracker
 
 
 class SmartImage:
-    def __init__(self, path: Path, image: np.ndarray, number):
+    def __init__(self, path: Path, frames: List[np.ndarray]):
         self.path = path
-        self.image = image
-        self.number = number
+        self.frames = frames
+
+    def DoOperation(self, operation: Callable[[np.ndarray], np.ndarray]):
+        return SmartImage(self.path, [operation(frame) for frame in self.frames])
 
 
-def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=None):
-    if isinstance(source, List):
+def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=None) -> List[SmartImage]:
+    if isinstance(source, list):
         for i in source:
             for image in LoadImages(i, size, recursive, mode):
                 yield image
@@ -32,8 +34,9 @@ def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=
                 yield image
         else:
             rawImage = Image.open(source)
+            numFrames = rawImage.n_frames
             preparedImages = []
-            for frame_number in range(rawImage.n_frames):
+            for frame_number in range(numFrames):
                 rawImage.seek(frame_number)
 
                 preparedImage = rawImage
@@ -41,30 +44,37 @@ def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=
                     preparedImage = preparedImage.resize(size)
 
                 if mode is not None:
-                    if preparedImage.mode == 'I' or preparedImage.mode == 'I;16' and mode == "L":
+                    if preparedImage.mode[0] == 'I' and mode == "L":
+                        preparedImage = preparedImage.convert(mode="I")
                         preparedImage = preparedImage.point(lambda x: x * (1 / 255))
 
                     if preparedImage.mode != mode:
                         preparedImage = preparedImage.convert(mode=mode)
-                preparedImages.append((frame_number, np.asarray(preparedImage)))
-            for (number, image) in preparedImages:
-                yield SmartImage(source, image, number)
+                preparedImages.append(np.asarray(preparedImage))
+
+            yield SmartImage(source, preparedImages)
     else:
-        raise TypeError("source must be of type List, string, or Path-like. Not " + str(type(source)))
+        raise TypeError("source must be a list, string, or Path-like. Not " + str(type(source)))
 
 
-def Contrast(image: np.ndarray):
-    return 255 * ((image - image.min()) / (image.max() - image.min()))
+def ContrastOp(frame: np.ndarray):
+    return 255 * ((frame - frame.min()) / (frame.max() - frame.min()))
 
 
-def ShowImage(image: np.ndarray):
-    Image.fromarray(image).show()
+def ShowImage(frame: np.ndarray):
+    Image.fromarray(frame).show()
 
 
-def SaveImages(images: List[np.ndarray], path: Path):
+def SaveGIF(images: List[np.ndarray], path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(images[0]).save(path, save_all=True, append_images=[Image.fromarray(im) for im in images[1:]],
                                     loop=0)
+
+
+def SaveTIFFStack(images: List[np.ndarray], path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(images[0]).save(path, save_all=True, append_images=[Image.fromarray(im) for im in images[1:]],
+                                    compression=None)
 
 
 def SaveImage(image: np.ndarray, path: Path):
@@ -78,23 +88,43 @@ def LabelToRGB(image: np.ndarray):
     return labeled
 
 
-def EmphasizeLabeled(labels: np.ndarray, labelColor=None, outlineColor=None):
-    pilImage = Image.fromarray(np.zeros_like(labels)).convert(mode="RGB")
-    drawer = ImageDraw.Draw(pilImage)
+def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, fillAlpha, presentColor, missingColor,
+                baseImages):
+    images = []
+
     font = ImageFont.truetype("arial.ttf", 16)
-    props = regionprops(labels)
-    for prop in props:
-        borderCoords = ComputeOutline(prop.image)
-        globalCoords = borderCoords + prop.bbox[:2]
-        xs = list(globalCoords[:, 1])
-        ys = list(globalCoords[:, 0])
-        outlineCoords = list(zip(xs, ys))
-        drawer.point(outlineCoords, outlineColor)
 
-        y, x = list(prop.centroid)
-        drawer.text((x, y), str(prop.label), anchor="ms", fill=labelColor, font=font)
+    for frame, baseImage in enumerate(baseImages):
+        print("Labeling " + str(frame))
+        tracksAtFrame = [track for track in tracks if track.DataAtFrame(frame) is not None]
 
-    return np.asarray(pilImage)
+        pilImage = Image.new(mode="RGBA", size=baseImage.shape, color=(0, 0, 0, 0))
+        drawer = ImageDraw.Draw(pilImage)
+
+        for track in tracksAtFrame:
+            data = track.DataAtFrame(frame)
+            fillCoords = list(zip(list(data.pixels[:, 1]), list(data.pixels[:, 0])))
+
+            if data.detection:
+                color = presentColor
+            else:
+                color = missingColor
+
+            drawer.point(fillCoords, color + (fillAlpha,))
+            borderCoords = ComputeOutline(data.image)
+            globalCoords = borderCoords + data.bbox[:2]
+            xs = list(globalCoords[:, 1])
+            ys = list(globalCoords[:, 0])
+            outlineCoords = list(zip(xs, ys))
+            drawer.point(outlineCoords, color + (outlineAlpha,))
+
+            y, x = list(data.centroid)
+            drawer.text((x, y), str(track.id), anchor="ms", fill=labelColor, font=font)
+
+        baseImage = Image.fromarray(baseImage).convert(mode="RGBA")
+        pilImage = Image.alpha_composite(baseImage, pilImage)
+        images.append(np.asarray(pilImage))
+    return images
 
 
 def ComputeOutline(image: np.ndarray):

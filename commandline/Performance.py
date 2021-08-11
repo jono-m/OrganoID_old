@@ -28,7 +28,7 @@ class Performance(Program):
     def RunProgram(self, parserArgs: argparse.Namespace):
         from sklearn.metrics import auc
         from backend.Segmenter import Segmenter
-        from backend.ImageManager import LoadImages
+        from backend.ImageManager import LoadImages, ContrastOp
         import matplotlib.pyplot as plt
         images = LoadImages(parserArgs.inputPath / "images", (512, 512), mode="L")
         segmentations = LoadImages(parserArgs.inputPath / "segmentations", (512, 512), mode="1")
@@ -40,7 +40,7 @@ class Performance(Program):
         for image, segmentation in zip(images, segmentations):
             self.printRep("Segmenting image %d: %s" % (count, image.path.name))
             count += 1
-            predicted = segmenter.Segment(image.image, False)
+            predicted = image.DoOperation(ContrastOp).DoOperation(segmenter.Segment)
 
             if parserArgs.sweep:
                 sweeps = np.linspace(0, 1, parserArgs.sweep)
@@ -50,7 +50,9 @@ class Performance(Program):
             for threshold in sweeps:
                 if threshold not in cmats_by_threshold:
                     cmats_by_threshold[threshold] = []
-                cmats_by_threshold[threshold].append(confusionMatrix(segmentation.image, predicted > threshold))
+                cmats = [confusionMatrix(segmentationFrame, predictedFrame > threshold) for
+                         segmentationFrame, predictedFrame in zip(segmentation.frames, predicted.frames)]
+                cmats_by_threshold[threshold] += cmats
 
         self.printRep()
         print("Done.")
