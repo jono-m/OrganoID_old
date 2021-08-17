@@ -1,1 +1,1 @@
-python OrganoID.py performance assets\model.tflite C:\Users\jonoj\Documents\ML\AugustPreparedData\validation -T 0.5 --iou
+python OrganoID.py performance assets\model.tflite C:\Users\jonoj\Documents\ML\AugustPreparedData\validation -T 0.6 --iou
