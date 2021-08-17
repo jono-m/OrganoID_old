@@ -18,6 +18,7 @@ def Augment(imagesPath: Path, segmentationsPath: Path, outputPath: Path, count: 
     augmentor.shear(probability=1, max_shear_left=20, max_shear_right=20)
     augmentor.random_distortion(probability=0.5, grid_width=5, grid_height=5, magnitude=3)
     augmentor.skew(probability=0.5, magnitude=0.3)
+    augmentor.resize(1, 512, 512)
 
     augmentor.sample(count)
 

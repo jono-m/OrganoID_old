@@ -22,5 +22,5 @@ class Split(Program):
 
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.SplitData import SplitData
-        SplitData((parserArgs.inputPath / "images").iterdir(), (parserArgs.inputPath / "segmentations").iterdir(),
+        SplitData(list((parserArgs.inputPath / "images").iterdir()), list((parserArgs.inputPath / "segmentations").iterdir()),
                   parserArgs.testSplit, parserArgs.outputPath / self.JobName())

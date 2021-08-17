@@ -21,7 +21,7 @@ class Augment(Program):
 
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.Augment import Augment
-        Augment((parserArgs.inputPath / "images").iterdir(),
-                (parserArgs.inputPath / "segmentations").iterdir(),
+        Augment(parserArgs.inputPath / "images",
+                parserArgs.inputPath / "segmentations",
                 parserArgs.outputPath / self.JobName(),
                 parserArgs.augmentCount)

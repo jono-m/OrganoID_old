@@ -1,0 +1,1 @@
+python OrganoID.py split C:\Users\jonoj\Documents\ML\AugustTrainingData -O C:\Users\jonoj\Documents\ML\SplitAugustData -TS 0.2

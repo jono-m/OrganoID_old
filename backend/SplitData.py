@@ -9,6 +9,9 @@ def SplitData(imagePaths: List[Path], segmentationPaths: List[Path], testSize: f
     imagePaths.sort(key=lambda x: x.stem)
     segmentationPaths.sort(key=lambda x: x.stem)
 
+    imagePaths = [path for path in imagePaths if path.stem in [segPath.stem for segPath in segmentationPaths]]
+    segmentationPaths = [path for path in segmentationPaths if path.stem in [imagePath.stem for imagePath in imagePaths]]
+
     trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(
         imagePaths,
         segmentationPaths,
@@ -16,8 +19,8 @@ def SplitData(imagePaths: List[Path], segmentationPaths: List[Path], testSize: f
 
     if outputPath is not None:
         _CopyToPath(trainingImagePaths, outputPath / "training" / "images")
-        _CopyToPath(testingImagePaths, outputPath / "validation" / "segmentations")
-        _CopyToPath(trainingSegmentationPaths, outputPath / "training" / "images")
+        _CopyToPath(testingImagePaths, outputPath / "validation" / "images")
+        _CopyToPath(trainingSegmentationPaths, outputPath / "training" / "segmentations")
         _CopyToPath(testingSegmentationPaths, outputPath / "validation" / "segmentations")
 
 

@@ -1,1 +1,1 @@
-python OrganoID.py segment C:\Users\jonoj\Repositories\OrganoID\assets\model.tflite C:\Users\jonoj\Documents\ML\TestingData\images -O C:\Users\jonoj\Documents\ML\Segmentations --raw --heat -T 0.5
+python OrganoID.py segment C:\Users\jonoj\Repositories\OrganoID\assets\model.tflite C:\Users\jonoj\Documents\ML\AugmentedData\OrganoID_augment_2021_06_29_23_46_50\validation\images -O C:\Users\jonoj\Documents\ML\Segmentations --raw --heat -T 0.5
