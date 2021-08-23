@@ -6,8 +6,9 @@ from commandline.Split import Split
 from commandline.Performance import Performance
 from commandline.PostProcess import PostProcess
 from commandline.Track import Track
+from commandline.TimeSeriesAnalysis import TimeSeriesAnalysis
 
-programs = [Train, Segment, Augment, Split, Performance, PostProcess, Track]
+programs = [Train, Segment, Augment, Split, Performance, PostProcess, Track, TimeSeriesAnalysis]
 
 parser = argparse.ArgumentParser(
     description="Neural network segmentation and tracking of organoid microscopy images.")

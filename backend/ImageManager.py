@@ -1,3 +1,4 @@
+import pathlib
 from typing import Union, List, Callable
 from PIL import Image, ImageFont, ImageDraw
 from pathlib import Path
@@ -30,6 +31,7 @@ def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=
                 source = [path for path in source.iterdir()]
             else:
                 source = [path for path in source.iterdir() if path.is_file()]
+                sort_paths_nicely(source)
             for image in LoadImages(source, size, recursive, mode):
                 yield image
         else:
@@ -131,3 +133,34 @@ def ComputeOutline(image: np.ndarray):
     edge = sobel(image, mode="constant")
     coords = np.argwhere(np.greater(edge, 0.5))
     return coords
+
+
+import re
+
+
+def tryint(s):
+    try:
+        return int(s)
+    except:
+        return s
+
+
+def alphanum_key(s):
+    """ Turn a string into a list of string and number chunks.
+        "z23a" -> ["z", 23, "a"]
+    """
+    return [tryint(c) for c in re.split('([0-9]+)', s)]
+
+
+def sort_nicely(l):
+    """ Sort the given list in the way that humans expect.
+    """
+    l.sort(key=alphanum_key)
+
+
+def path_alphanum_key(p: Path):
+    return alphanum_key(p.name)
+
+
+def sort_paths_nicely(paths: List[pathlib.Path]):
+    paths.sort(key=path_alphanum_key)

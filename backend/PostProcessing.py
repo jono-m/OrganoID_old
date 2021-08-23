@@ -1,9 +1,15 @@
 import skimage.measure
 import skimage.morphology as morphology
+import scipy.ndimage as ndimage
 import numpy as np
 
 
-def PostProcess(image: np.ndarray, minimumArea: float = None, borderDiameterCutoff: float = None):
+def PostProcess(image: np.ndarray, minimumArea: float = None, borderDiameterCutoff: float = None,
+                fillOrganoidHoles=True):
+    # Fill holes of contiguous regions.
+    if fillOrganoidHoles:
+        image = FillHoles(image)
+
     # Remove debris.
     if minimumArea:
         image = morphology.remove_small_objects(image, minimumArea)
@@ -33,3 +39,16 @@ def clearBorders(image: np.ndarray, borderDiameterCutoff: float):
     image[np.isin(image, toRemove)] = 0
 
     return image
+
+
+def FillHoles(image: np.ndarray):
+    filledImage = np.zeros_like(image)
+    labels = np.unique(image)
+    for label in labels:
+        if label == 0:
+            continue
+        subImage = np.where(image == label, True, False)
+        filled = ndimage.binary_fill_holes(subImage)
+        filledImage[filled] = label
+
+    return filledImage

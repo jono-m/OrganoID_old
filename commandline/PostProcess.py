@@ -47,7 +47,8 @@ class PostProcess(Program):
 
             labeled = image.DoOperation(lambda x: Label(x, parserArgs.threshold, parserArgs.watershedThresh))
 
-            postProcessed = labeled.DoOperation(lambda x: PostProcess(x, parserArgs.minArea, parserArgs.borderCutoff))
+            postProcessed = labeled.DoOperation(
+                lambda x: PostProcess(x, parserArgs.minArea, parserArgs.borderCutoff, True))
 
             if parserArgs.rgb:
                 outputImages.append(("rgb", postProcessed.DoOperation(LabelToRGB)))
