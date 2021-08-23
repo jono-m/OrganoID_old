@@ -29,12 +29,13 @@ class TimeSeriesAnalysis(Program):
 
         parserArgs.outputPath.mkdir(parents=True, exist_ok=True)
         with open(parserArgs.outputPath / (self.JobName() + ".csv"), 'w', newline='') as csvfile:
-            csvfile.write("Time Point, Organoid Count, Mean Area, Median Area, Area STD, Individual Areas\n")
+            csvfile.write("Time Point, Organoid Count, Total Area, Mean Area, Median Area, Area STD, Individual Areas\n")
             for t in range(len(analyzer.timePoints)):
                 point = analyzer.timePoints[t]
-                csvfile.write("%d, %d, %d, %d, %d, %s\n" %
+                csvfile.write("%d, %d, %d, %d, %d, %d, %s\n" %
                               (t,
                                len(point.organoidAreas),
+                               np.sum(point.organoidAreas),
                                np.mean(point.organoidAreas),
                                np.median(point.organoidAreas),
                                np.std(point.organoidAreas),
