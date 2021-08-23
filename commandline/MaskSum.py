@@ -22,16 +22,24 @@ class MaskSum(Program):
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.ImageManager import LoadImages
         import numpy as np
-        images = LoadImages(parserArgs.imagesPath, size=[512, 512], mode="L")
-        masks = LoadImages(parserArgs.masksPath, size=[512, 512], mode="1")
-
-        count = 1
+        images = list(LoadImages(parserArgs.imagesPath, size=[512, 512], mode="L"))
+        masks = list(LoadImages(parserArgs.masksPath, size=[512, 512], mode="1"))
 
         imageFrames = [frame for image in images for frame in image.frames]
+        imageNames = []
+        for image in images:
+            count = len(image.frames)
+            if count == 1:
+                imageNames.append(image.path.name)
+            else:
+                imageNames += [image.path.name + "_" + str(i+1) for i in range(count)]
+
         maskFrames = [frame for mask in masks for frame in mask.frames]
         intensities = []
-        for (mask, image) in zip(maskFrames, imageFrames):
-            print("Masking %d" % count)
+        count = 1
+
+        for (name, mask, image) in zip(imageNames, maskFrames, imageFrames):
+            print("Masking %d: %s" % (count, name))
             count += 1
             maskImage = np.where(mask, image, 0)
             intensities.append(np.sum(maskImage))
@@ -40,13 +48,13 @@ class MaskSum(Program):
             parserArgs.outputPath.mkdir(parents=True, exist_ok=True)
             with open(parserArgs.outputPath / (self.JobName() + ".csv"), 'w', newline='') as csvfile:
                 csvfile.write(
-                    "Time Point, Total Intensity\n")
+                    "Name, Total Intensity\n")
                 for t in range(len(intensities)):
-                    csvfile.write("%d, %d\n" % (t, intensities[t]))
+                    csvfile.write("%s, %d\n" % (imageNames[t], intensities[t]))
 
         if parserArgs.print:
-            for intensity in intensities:
-                print(intensity)
+            for (name, intensity) in zip(imageNames, intensities):
+                print("%s: %d" % (name, intensity))
 
         if parserArgs.plot:
             import matplotlib.pyplot as plt
