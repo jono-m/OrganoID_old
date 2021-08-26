@@ -3,13 +3,13 @@ import numpy as np
 from skimage.measure import regionprops, label
 
 
-class TimeSeriesAnalyzer:
+class Analyzer:
     class TimePointData:
         def __init__(self, organoidAreas: List[int]):
             self.organoidAreas = organoidAreas
 
     def __init__(self):
-        self.timePoints: List[TimeSeriesAnalyzer.TimePointData] = []
+        self.timePoints: List[Analyzer.TimePointData] = []
 
     def Reset(self):
         self.timePoints = []
@@ -18,4 +18,4 @@ class TimeSeriesAnalyzer:
         regionInfo = regionprops(label(image))
 
         areas = [region.area for region in regionInfo]
-        self.timePoints.append(TimeSeriesAnalyzer.TimePointData(areas))
+        self.timePoints.append(Analyzer.TimePointData(areas))

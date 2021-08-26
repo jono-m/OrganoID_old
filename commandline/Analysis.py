@@ -3,12 +3,12 @@ import argparse
 import pathlib
 
 
-class TimeSeriesAnalysis(Program):
+class Analysis(Program):
     def Name(self):
-        return "tsa"
+        return "analysis"
 
     def Description(self):
-        return "Time-series analysis of segmented and labeled organoid images."
+        return "Analysis of segmented and labeled organoid images."
 
     def SetupParser(self, parser: argparse.ArgumentParser):
         parser.add_argument("imagesPath", help="Path to labeled images to process.", type=pathlib.Path)
@@ -20,45 +20,48 @@ class TimeSeriesAnalysis(Program):
 
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.ImageManager import LoadImages
-        from backend.TimeSeriesAnalyzer import TimeSeriesAnalyzer
+        from backend.Analyzer import Analyzer
         import matplotlib.pyplot as plt
         import numpy as np
         images = LoadImages(parserArgs.imagesPath, size=[512, 512])
 
         count = 1
-        analyzer = TimeSeriesAnalyzer()
+        analyzer = Analyzer()
+        imageNames = []
         for image in images:
             print("Analyzing %d: %s" % (count, image.path))
             count += 1
+            if len(image.frames) == 1:
+                imageNames.append(image.path.name)
+            else:
+                imageNames += [image.path.name + "_" + str(i + 1) for i in range(len(image.frames))]
             [analyzer.AnalyzeImage(frame) for frame in image.frames]
 
         if parserArgs.outputPath:
             parserArgs.outputPath.mkdir(parents=True, exist_ok=True)
             with open(parserArgs.outputPath / (self.JobName() + ".csv"), 'w', newline='') as csvfile:
                 csvfile.write(
-                    "Time Point, Organoid Count, Total Area, Mean Area, Median Area, Area STD, Individual Areas\n")
-                for t in range(len(analyzer.timePoints)):
-                    point = analyzer.timePoints[t]
-                    csvfile.write("%d, %d, %d, %d, %d, %d, %s\n" %
-                                  (t,
-                                   len(point.organoidAreas),
-                                   np.sum(point.organoidAreas),
-                                   np.mean(point.organoidAreas),
-                                   np.median(point.organoidAreas),
-                                   np.std(point.organoidAreas),
-                                   point.organoidAreas))
+                    "Image Name, Organoid Count, Total Area, Mean Area, Median Area, Area STD, Individual Areas\n")
+                for (name, timePoint) in zip(imageNames, analyzer.timePoints):
+                    csvfile.write("%s, %d, %d, %d, %d, %d, %s\n" %
+                                  (name,
+                                   len(timePoint.organoidAreas),
+                                   np.sum(timePoint.organoidAreas),
+                                   np.mean(timePoint.organoidAreas),
+                                   np.median(timePoint.organoidAreas),
+                                   np.std(timePoint.organoidAreas),
+                                   timePoint.organoidAreas))
 
         if parserArgs.print:
-            for t in range(len(analyzer.timePoints)):
-                point = analyzer.timePoints[t]
-                print("%d, %d, %d, %d, %d, %d, %s\n" %
-                      (t,
-                       len(point.organoidAreas),
-                       np.sum(point.organoidAreas),
-                       np.mean(point.organoidAreas),
-                       np.median(point.organoidAreas),
-                       np.std(point.organoidAreas),
-                       point.organoidAreas))
+            for (name, timePoint) in zip(imageNames, analyzer.timePoints):
+                print("%s, %d, %d, %d, %d, %d, %s\n" %
+                      (name,
+                       len(timePoint.organoidAreas),
+                       np.sum(timePoint.organoidAreas),
+                       np.mean(timePoint.organoidAreas),
+                       np.median(timePoint.organoidAreas),
+                       np.std(timePoint.organoidAreas),
+                       timePoint.organoidAreas))
 
         if parserArgs.plot:
             t = range(len(analyzer.timePoints))
