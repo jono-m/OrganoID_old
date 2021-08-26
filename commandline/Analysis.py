@@ -50,7 +50,7 @@ class Analysis(Program):
                                    np.mean(timePoint.organoidAreas),
                                    np.median(timePoint.organoidAreas),
                                    np.std(timePoint.organoidAreas),
-                                   timePoint.organoidAreas))
+                                   ", ".join([str(x) for x in timePoint.organoidAreas])))
 
         if parserArgs.print:
             for (name, timePoint) in zip(imageNames, analyzer.timePoints):
