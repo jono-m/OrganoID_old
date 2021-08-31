@@ -39,7 +39,6 @@ class PostProcess(Program):
         from backend.PostProcessing import PostProcess
         images = LoadImages(parserArgs.imagesPath, size=[512, 512])
 
-        outputImages = []
         count = 1
         for image in images:
             print("Processing %d: %s" % (count, image.path))
@@ -50,6 +49,7 @@ class PostProcess(Program):
             postProcessed = labeled.DoOperation(
                 lambda x: PostProcess(x, parserArgs.minArea, parserArgs.borderCutoff, True))
 
+            outputImages = []
             if parserArgs.rgb:
                 outputImages.append(("rgb", postProcessed.DoOperation(LabelToRGB)))
             if parserArgs.raw:
@@ -58,18 +58,13 @@ class PostProcess(Program):
             if parserArgs.show:
                 [ShowImage(outputImage) for (_, outputImage) in outputImages]
 
-        if parserArgs.show:
-            for (_, outputImage, _) in outputImages:
-                for frame in outputImage.frames:
-                    ShowImage(frame)
-
-        if parserArgs.outputPath is not None:
-            for name, outputImage in outputImages:
-                extension = outputImage.path.suffix
-                fileName = outputImage.path.stem + "_" + name + extension
-                savePath = parserArgs.outputPath / self.JobName() / fileName
-                print(savePath)
-                if len(outputImage.frames) > 1:
-                    SaveTIFFStack(outputImage.frames, savePath)
-                else:
-                    SaveImage(outputImage, savePath)
+            if parserArgs.outputPath is not None:
+                for name, outputImage in outputImages:
+                    extension = outputImage.path.suffix
+                    fileName = outputImage.path.stem + "_" + name + extension
+                    savePath = parserArgs.outputPath / self.JobName() / fileName
+                    print(savePath)
+                    if len(outputImage.frames) > 1:
+                        SaveTIFFStack(outputImage.frames, savePath)
+                    else:
+                        SaveImage(outputImage, savePath)
