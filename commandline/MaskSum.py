@@ -26,27 +26,22 @@ class MaskSum(Program):
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.ImageManager import LoadImages
         import numpy as np
-        images = list(LoadImages(parserArgs.imagesPath, size=[512, 512], mode="L"))
+        images = list(LoadImages(parserArgs.imagesPath, size=[512, 512]))
         masks = list(LoadImages(parserArgs.masksPath, size=[512, 512], mode="1"))
 
-        imageFrames = [frame for image in images for frame in image.frames]
+        intensities = []
         imageNames = []
-        for image in images:
+        for (mask, image) in zip(masks, images):
             count = len(image.frames)
             if count == 1:
-                imageNames.append(image.path.name)
+                names = [image.path.stem]
             else:
-                imageNames += [image.path.name + "_" + str(i+1) for i in range(count)]
-
-        maskFrames = [frame for mask in masks for frame in mask.frames]
-        intensities = []
-        count = 1
-
-        for (name, mask, image) in zip(imageNames, maskFrames, imageFrames):
-            print("Masking %d: %s" % (count, name))
-            count += 1
-            maskImage = np.where(mask, image, 0)
-            intensities.append(np.sum(maskImage))
+                names = [image.path.stem + "_" + str(i+1) for i in range(count)]
+            imageNames += names
+            for (name, maskFrame, imageFrame) in zip(names, mask.frames, image.frames):
+                print("Masking: %s" % name)
+                maskImage = np.where(maskFrame, imageFrame, 0)
+                intensities.append(np.sum(maskImage))
 
         def GetText():
             allText = ""
