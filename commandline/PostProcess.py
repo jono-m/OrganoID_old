@@ -67,4 +67,4 @@ class PostProcess(Program):
                     if len(outputImage.frames) > 1:
                         SaveTIFFStack(outputImage.frames, savePath)
                     else:
-                        SaveImage(outputImage, savePath)
+                        SaveImage(outputImage.frames[0], savePath)

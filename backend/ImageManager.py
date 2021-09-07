@@ -36,7 +36,7 @@ def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=
                 yield image
         else:
             rawImage = Image.open(source)
-            numFrames = rawImage.n_frames
+            numFrames = getattr(rawImage, "n_frames", 1)
             preparedImages = []
             for frame_number in range(numFrames):
                 rawImage.seek(frame_number)
