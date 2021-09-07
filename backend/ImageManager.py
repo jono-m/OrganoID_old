@@ -42,8 +42,6 @@ def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=
                 rawImage.seek(frame_number)
 
                 preparedImage = rawImage
-                if size is not None:
-                    preparedImage = preparedImage.resize(size)
 
                 if mode is not None:
                     if preparedImage.mode[0] == 'I' and mode == "L":
@@ -52,6 +50,9 @@ def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=
 
                     if preparedImage.mode != mode:
                         preparedImage = preparedImage.convert(mode=mode)
+
+                if size is not None:
+                    preparedImage = preparedImage.resize(size)
                 preparedImages.append(np.asarray(preparedImage))
 
             yield SmartImage(source, preparedImages)
