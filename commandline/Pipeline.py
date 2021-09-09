@@ -83,7 +83,7 @@ class Pipeline(Program):
                     ("heat",
                      segmented_raw.DoOperation(lambda x: (plt.get_cmap("hot")(x)[:, :, :3] * 255).astype(np.uint8))))
             if parserArgs.edge:
-                outputImages.append(("edge", edges.DoOperation(lambda x: x * 2048)))
+                outputImages.append(("edge", edges.DoOperation(lambda x: x > 0)))
             if parserArgs.thresh:
                 outputImages.append(("threshold", segmented_raw.DoOperation(lambda x: x > parserArgs.threshold)))
             if parserArgs.rgb:
