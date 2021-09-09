@@ -35,11 +35,14 @@ class Pipeline(Program):
         parser.add_argument("--heat", action="store_true", help="If set, the output images will also be produced in a "
                                                                 "heatmap format, which is good for visualizing raw "
                                                                 "network behavior.")
-        parser.add_argument("--edge", action="store_true", help="If set, the output images will also be produced to show "
-                                                                "intermediate edge detection.")
-        parser.add_argument("--raw", action="store_true", help="If set, the output images will also be produced in a raw-labeled format")
+        parser.add_argument("--edge", action="store_true",
+                            help="If set, the output images will also be produced to show "
+                                 "intermediate edge detection.")
+        parser.add_argument("--raw", action="store_true",
+                            help="If set, the output images will also be produced in a raw-labeled format")
         parser.add_argument("--analyze", action="store_true", help="If set, organoids will also be analyzed.")
-        parser.add_argument("--rgb", action="store_true", help="If set, an RGB-labeled version of each image will be produced.")
+        parser.add_argument("--rgb", action="store_true",
+                            help="If set, an RGB-labeled version of each image will be produced.")
         parser.add_argument("--show", action="store_true", help="If set, the output images will be displayed.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
@@ -89,6 +92,8 @@ class Pipeline(Program):
                 outputImages.append(("threshold", segmented_raw.DoOperation(lambda x: x > parserArgs.threshold)))
             if parserArgs.rgb:
                 outputImages.append(("rgb", postProcessed.DoOperation(LabelToRGB)))
+            if parserArgs.raw:
+                outputImages.append(("raw", postProcessed))
 
             if parserArgs.show:
                 [ShowImage(outputImage.frames[0]) for (_, outputImage) in outputImages]
@@ -104,15 +109,17 @@ class Pipeline(Program):
                     else:
                         SaveImage(outputImage.frames[0], savePath)
 
-                with open(parserArgs.outputPath / self.JobName() / (self.JobName() + ".csv"), 'w', newline='') as csvfile:
-                    csvfile.write(
-                        "Image Name, Organoid Count, Total Area, Mean Area, Median Area, Area STD, Individual Areas\n")
-                    for (name, timePoint) in zip(imageNames, analyzer.timePoints):
-                        csvfile.write("%s, %d, %d, %d, %d, %d, %s\n" %
-                                      (name,
-                                       len(timePoint.organoidAreas),
-                                       np.sum(timePoint.organoidAreas),
-                                       np.mean(timePoint.organoidAreas),
-                                       np.median(timePoint.organoidAreas),
-                                       np.std(timePoint.organoidAreas),
-                                       ", ".join([str(x) for x in timePoint.organoidAreas])))
+                if parserArgs.analyze:
+                    with open(parserArgs.outputPath / self.JobName() / (self.JobName() + ".csv"), 'w',
+                              newline='') as csvfile:
+                        csvfile.write(
+                            "Image Name, Organoid Count, Total Area, Mean Area, Median Area, Area STD, Individual Areas\n")
+                        for (name, timePoint) in zip(imageNames, analyzer.timePoints):
+                            csvfile.write("%s, %d, %d, %d, %d, %d, %s\n" %
+                                          (name,
+                                           len(timePoint.organoidAreas),
+                                           np.sum(timePoint.organoidAreas),
+                                           np.mean(timePoint.organoidAreas),
+                                           np.median(timePoint.organoidAreas),
+                                           np.std(timePoint.organoidAreas),
+                                           ", ".join([str(x) for x in timePoint.organoidAreas])))
