@@ -37,6 +37,7 @@ class Pipeline(Program):
                                                                 "network behavior.")
         parser.add_argument("--edge", action="store_true", help="If set, the output images will also be produced to show "
                                                                 "intermediate edge detection.")
+        parser.add_argument("--analyze", action="store_true", help="If set, organoids will also be analyzed.")
         parser.add_argument("--rgb", action="store_true", help="If set, an RGB version of each image will be produced.")
         parser.add_argument("--show", action="store_true", help="If set, the output images will be displayed.")
 
@@ -45,10 +46,13 @@ class Pipeline(Program):
         from backend.Label import Label, Edges
         from backend.Segmenter import Segmenter
         from backend.PostProcessing import PostProcess
+        from backend.Analyzer import Analyzer
         import numpy as np
         import matplotlib.pyplot as plt
         images = LoadImages(parserArgs.imagesPath, size=[512, 512], mode="L")
         segmenter = Segmenter(parserArgs.modelPath)
+        analyzer = Analyzer()
+        imageNames = []
 
         count = 1
         for image in images:
@@ -66,6 +70,12 @@ class Pipeline(Program):
 
             postProcessed = labeled.DoOperation(
                 lambda x: PostProcess(x, parserArgs.minArea, parserArgs.borderCutoff, True))
+
+            if len(image.frames) == 1:
+                imageNames.append(image.path.name)
+            else:
+                imageNames += [image.path.name + "_" + str(i + 1) for i in range(len(image.frames))]
+            [analyzer.AnalyzeImage(frame) for frame in postProcessed.frames]
 
             outputImages = []
             if parserArgs.heat:
@@ -92,3 +102,16 @@ class Pipeline(Program):
                         SaveTIFFStack(outputImage.frames, savePath)
                     else:
                         SaveImage(outputImage.frames[0], savePath)
+
+                with open(parserArgs.outputPath / self.JobName() / (self.JobName() + ".csv"), 'w', newline='') as csvfile:
+                    csvfile.write(
+                        "Image Name, Organoid Count, Total Area, Mean Area, Median Area, Area STD, Individual Areas\n")
+                    for (name, timePoint) in zip(imageNames, analyzer.timePoints):
+                        csvfile.write("%s, %d, %d, %d, %d, %d, %s\n" %
+                                      (name,
+                                       len(timePoint.organoidAreas),
+                                       np.sum(timePoint.organoidAreas),
+                                       np.mean(timePoint.organoidAreas),
+                                       np.median(timePoint.organoidAreas),
+                                       np.std(timePoint.organoidAreas),
+                                       ", ".join([str(x) for x in timePoint.organoidAreas])))
