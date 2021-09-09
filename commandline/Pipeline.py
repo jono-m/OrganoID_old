@@ -37,8 +37,9 @@ class Pipeline(Program):
                                                                 "network behavior.")
         parser.add_argument("--edge", action="store_true", help="If set, the output images will also be produced to show "
                                                                 "intermediate edge detection.")
+        parser.add_argument("--raw", action="store_true", help="If set, the output images will also be produced in a raw-labeled format")
         parser.add_argument("--analyze", action="store_true", help="If set, organoids will also be analyzed.")
-        parser.add_argument("--rgb", action="store_true", help="If set, an RGB version of each image will be produced.")
+        parser.add_argument("--rgb", action="store_true", help="If set, an RGB-labeled version of each image will be produced.")
         parser.add_argument("--show", action="store_true", help="If set, the output images will be displayed.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
