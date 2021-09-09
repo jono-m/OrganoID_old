@@ -26,7 +26,7 @@ def Edges(image: np.ndarray, foregroundThreshold, watershedThreshold=None):
         smoothEdges = skimage.filters.gaussian(skimage.filters.sobel(image), 3)
 
         # The centers of organoids can be found by removing edges.
-        edges = skimage.filters.apply_hysteresis_threshold(smoothEdges, 0.003, 0.03)
+        edges = skimage.filters.apply_hysteresis_threshold(smoothEdges, 0.005, 0.05)
     return edges
 
 
