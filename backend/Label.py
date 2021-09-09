@@ -5,23 +5,7 @@ import skimage.filters
 import scipy.ndimage as ndimage
 
 
-def Edges(image: np.ndarray):
-    # The negated raw output from the CNN is the heightmap for watershed. Organoid borders will be slightly higher
-    # than their centers (detected in the initializer image), and so will form the watershed boundary.
-    smoothForeground = skimage.filters.gaussian(image, 2)
-    # The centers of organoids can be found by removing edges.
-    edges = skimage.filters.apply_hysteresis_threshold(skimage.filters.sobel(smoothForeground), 0.004, 0.01)
-    return edges
-
-
-def Label(image: np.ndarray, foregroundThreshold: int, watershedThreshold=None):
-    foregroundImage = np.where(image > foregroundThreshold, image, 0)
-    foregroundMask = ndimage.binary_opening(image > foregroundThreshold)
-    # The negated raw output from the CNN is the heightmap for watershed. Organoid borders will be slightly higher
-    # than their centers (detected in the initializer image), and so will form the watershed boundary.
-    smoothForeground = skimage.filters.gaussian(image, 2)
-    heightmap = -smoothForeground
-
+def Edges(image: np.ndarray, foregroundThreshold, watershedThreshold=None):
     THRESHOLD = 0
     SOBEL = 1
 
@@ -33,12 +17,29 @@ def Label(image: np.ndarray, foregroundThreshold: int, watershedThreshold=None):
     if method == THRESHOLD:
         # The centers of organoids can be found with a higher threshold.
         # Do an opening to remove small debris.
-        initializerImage = ndimage.binary_opening(foregroundImage > watershedThreshold)
-        edges = None
+        centers = ndimage.binary_opening(image > watershedThreshold)
+        foregroundMask = ndimage.binary_opening(image > foregroundThreshold)
+        edges = np.bitwise_and(foregroundMask, np.bitwise_not(centers))
     else:
+        # The negated raw output from the CNN is the heightmap for watershed. Organoid borders will be slightly higher
+        # than their centers (detected in the initializer image), and so will form the watershed boundary.
+        smoothEdges = skimage.filters.gaussian(skimage.filters.sobel(image), 3)
+
         # The centers of organoids can be found by removing edges.
-        edges = skimage.filters.apply_hysteresis_threshold(skimage.filters.sobel(smoothForeground), 0.004, 0.01)
-        initializerImage = np.bitwise_and(foregroundMask, np.bitwise_not(edges))
+        edges = skimage.filters.apply_hysteresis_threshold(smoothEdges, 0.003, 0.03)
+    return edges
+
+
+def Label(image: np.ndarray, foregroundThreshold: int, watershedThreshold=None):
+    foregroundMask = ndimage.binary_opening(image > foregroundThreshold)
+    # The negated raw output from the CNN is the heightmap for watershed. Organoid borders will be slightly higher
+    # than their centers (detected in the initializer image), and so will form the watershed boundary.
+    smoothForeground = skimage.filters.gaussian(image, 2)
+    heightmap = -smoothForeground
+
+    edges = Edges(image, foregroundThreshold, watershedThreshold)
+
+    initializerImage = np.bitwise_and(foregroundMask, np.bitwise_not(edges))
 
     markers, _ = ndimage.label(initializerImage)
     labels = segmentation.watershed(heightmap, markers, mask=foregroundMask)

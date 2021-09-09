@@ -63,7 +63,7 @@ class Pipeline(Program):
                 lambda x: Label(x, parserArgs.threshold, parserArgs.watershedThresh))
 
             edges = segmented_raw.DoOperation(
-                lambda x: Edges(x))
+                lambda x: Edges(x, parserArgs.threshold, parserArgs.watershedThresh))
 
             postProcessed = labeled.DoOperation(
                 lambda x: PostProcess(x, parserArgs.minArea, parserArgs.borderCutoff, True))
