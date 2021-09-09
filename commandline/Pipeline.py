@@ -19,9 +19,9 @@ class Pipeline(Program):
         parser.add_argument("-T", dest="threshold", default=0.5,
                             type=float,
                             help="Segmentation threshold (0-1).")
-        parser.add_argument("-W", dest="watershedThresh", default=None,
+        parser.add_argument("-C", dest="centerThreshold", default=None,
                             type=float,
-                            help="Watershed threshold (0-1).")
+                            help="Center-finding threshold (0-1). If not set, OrganoID will use Sobel edge detection.")
         parser.add_argument("-A", dest="minArea", default=20,
                             type=int,
                             help="Area cutoff.")
@@ -30,14 +30,13 @@ class Pipeline(Program):
                             help="Remove organoids that are touching borders with more than [BORDERCUTOFF]*Diameter "
                                  "pixels (0-1).")
         parser.add_argument("--thresh", action="store_true",
-                            help="If set, the output images will also be produced in raw "
-                                 "format, which is needed for postprocessing.")
+                            help="If set, the output images will also be produced as black-and-white "
+                                 "thresholded segmentations.")
         parser.add_argument("--heat", action="store_true", help="If set, the output images will also be produced in a "
                                                                 "heatmap format, which is good for visualizing raw "
                                                                 "network behavior.")
-        parser.add_argument("--edge", action="store_true", help="If set, the output images will also be produced in a "
-                                                                "heatmap format, which is good for visualizing raw "
-                                                                "network behavior.")
+        parser.add_argument("--edge", action="store_true", help="If set, the output images will also be produced to show "
+                                                                "intermediate edge detection.")
         parser.add_argument("--rgb", action="store_true", help="If set, an RGB version of each image will be produced.")
         parser.add_argument("--show", action="store_true", help="If set, the output images will be displayed.")
 
@@ -60,10 +59,10 @@ class Pipeline(Program):
             segmented_raw = image.DoOperation(ContrastOp).DoOperation(segmenter.Segment)
 
             labeled = segmented_raw.DoOperation(
-                lambda x: Label(x, parserArgs.threshold, parserArgs.watershedThresh))
+                lambda x: Label(x, parserArgs.threshold, parserArgs.centerThreshold))
 
             edges = segmented_raw.DoOperation(
-                lambda x: Edges(x, parserArgs.threshold, parserArgs.watershedThresh))
+                lambda x: Edges(x, parserArgs.threshold, parserArgs.centerThreshold))
 
             postProcessed = labeled.DoOperation(
                 lambda x: PostProcess(x, parserArgs.minArea, parserArgs.borderCutoff, True))
