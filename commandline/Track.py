@@ -18,11 +18,12 @@ class Track(Program):
                             type=pathlib.Path)
         parser.add_argument("--raw", action="store_true", help="If set, all images will be saved as separate frames.")
         parser.add_argument("--gif", action="store_true", help="If set, all images will be saved as an animated GIF.")
+        parser.add_argument("--analyze", action="store_true", help="If set, organoids will also be analyzed.")
         parser.add_argument("--show", action="store_true", help="Show frames.")
         parser.add_argument("--label", action="store_true", help="Draw text on images.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
-        from backend.ImageManager import LoadImages, SaveGIF, ShowImage, LabelTracks
+        from backend.ImageManager import LoadImages, SaveGIF, ShowImage, LabelTracks, SaveImage
         from backend.Tracker import Tracker
         images = LoadImages(parserArgs.imagesPath, size=[512, 512])
 
@@ -42,5 +43,29 @@ class Track(Program):
 
         if parserArgs.show:
             [ShowImage(image) for image in outputImages]
-        if parserArgs.outputPath is not None and parserArgs.gif:
-            SaveGIF(outputImages, parserArgs.outputPath / self.JobName() / "trackResults.gif")
+        if parserArgs.outputPath is not None:
+            if parserArgs.gif:
+                SaveGIF(outputImages, parserArgs.outputPath / self.JobName() / "trackResults.gif")
+
+            if parserArgs.raw:
+                i = 0
+                for outputImage in outputImages:
+                    fileName = "trackResults_" + str(i) + ".png"
+                    i += 1
+                    savePath = parserArgs.outputPath / self.JobName() / fileName
+                    SaveImage(outputImage.frames[0], savePath)
+
+            if parserArgs.analyze:
+                with open(parserArgs.outputPath / self.JobName() / (self.JobName() + ".csv"), 'w',
+                          newline='') as csvfile:
+                    csvfile.write(
+                        "Organoid ID, " + ", ".join([("Area(t=%d)" % i) for i in range(len(outputImages))]) + "\n")
+                    for track in tracker.GetTracks():
+                        areas = []
+                        for data in track.data:
+                            if data.detection:
+                                areas.append(str(data.area))
+                            else:
+                                areas.append("None")
+                        line = str(track.id) + ", " + ", ".join(areas) + "\n"
+                        csvfile.write(line)
