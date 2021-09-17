@@ -65,7 +65,7 @@ class Pipeline(Program):
             count += 1
 
             segmented_raw = image.DoOperation(ContrastOp).DoOperation(segmenter.Segment)
-
+            print("Segmented.")
             labeled = segmented_raw.DoOperation(
                 lambda x: Label(x, parserArgs.threshold, parserArgs.centerThreshold))
 

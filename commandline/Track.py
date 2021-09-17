@@ -16,7 +16,22 @@ class Track(Program):
         parser.add_argument("-O", dest="outputPath", default=None,
                             help="Path where results will be saved.",
                             type=pathlib.Path)
-        parser.add_argument("--raw", action="store_true", help="If set, all images will be saved as separate frames.")
+        parser.add_argument("-B", dest="brightness", default=1,
+                            help="Brightness multiplier for input image.",
+                            type=float)
+        parser.add_argument("-CM", dest="missingCost", default=20,
+                            help="Cost for considering an organoid as 'lost' for a frame, instead of assigning it to an"
+                                 " existing organoid track. A higher value assumes that organoids are rarely lost in "
+                                 "sequential images. A lower value allows for more forgiveness. Values are "
+                                 "in pixels, as relative to the distance an organoid might move over one frame.")
+        parser.add_argument("-CN", dest="newCost", default=200,
+                            help="Cost for considering an organoid as 'new' for a frame, instead of assigning it to an"
+                                 " existing organoid track. A higher value assumes that new organoids rarely "
+                                 "appear in sequential images (after the first image). "
+                                 "A lower value will allow for more organoid tracks over time. Values are "
+                                 "in pixels, as relative to the distance an organoid might move over one frame.")
+        parser.add_argument("--individual", action="store_true",
+                            help="If set, all images will be saved as separate frames.")
         parser.add_argument("--gif", action="store_true", help="If set, all images will be saved as an animated GIF.")
         parser.add_argument("--analyze", action="store_true", help="If set, organoids will also be analyzed.")
         parser.add_argument("--show", action="store_true", help="Show frames.")
@@ -30,6 +45,8 @@ class Track(Program):
         count = 1
 
         tracker = Tracker()
+        tracker.costOfMissingOrganoid = parserArgs.missingCost
+        tracker.costOfNewOrganoid = parserArgs.newCost
 
         for image in images:
             print("Tracking %d: %s" % (count, image.path))
@@ -37,7 +54,7 @@ class Track(Program):
             [tracker.Track(frame) for frame in image.frames]
 
         baseImages = LoadImages(parserArgs.overlayPath, size=[512, 512], mode='L')
-        baseFrames = [frame for baseImage in baseImages for frame in baseImage.frames]
+        baseFrames = [frame * parserArgs.brightness for baseImage in baseImages for frame in baseImage.frames]
         outputImages = LabelTracks(tracker.GetTracks(), (255, 255, 255, 255), 255, 50, (0, 255, 0), (255, 0, 0),
                                    baseFrames)
 
@@ -47,7 +64,7 @@ class Track(Program):
             if parserArgs.gif:
                 SaveGIF(outputImages, parserArgs.outputPath / self.JobName() / "trackResults.gif")
 
-            if parserArgs.raw:
+            if parserArgs.individual:
                 i = 0
                 for outputImage in outputImages:
                     fileName = "trackResults_" + str(i) + ".png"

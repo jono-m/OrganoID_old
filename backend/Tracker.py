@@ -58,7 +58,8 @@ class Tracker:
         self._tracks: List[Tracker.OrganoidTrack] = []
         self.distanceCost = 1
         self.areaCost = 0
-        self.costOfNonAssignment = 100
+        self.costOfNewOrganoid = 100
+        self.costOfMissingOrganoid = 20
         self.deleteTracksAfterMissing = 10
         self.frame = 0
 
@@ -74,8 +75,16 @@ class Tracker:
         numDetections = len(detections)
 
         fullSize = numTracks + numDetections
-        costMatrix = np.ones([fullSize, fullSize]) * self.costOfNonAssignment
-        costMatrix[numTracks:, numDetections:] = 0
+        costMatrix = np.zeros([fullSize, fullSize])
+
+        newOrganoidMatrix = np.full([numDetections, numDetections], np.inf)
+        np.fill_diagonal(newOrganoidMatrix, self.costOfNewOrganoid)
+
+        missingOrganoidMatrix = np.full([numTracks, numTracks], np.inf)
+        np.fill_diagonal(missingOrganoidMatrix, self.costOfMissingOrganoid)
+
+        costMatrix[numTracks:, :numDetections] = newOrganoidMatrix
+        costMatrix[:numTracks, numDetections:] = missingOrganoidMatrix
 
         for trackNumber in range(numTracks):
             distanceCosts = self.DistanceCost(availableTracks[trackNumber].LastData().centroid, centroids)
