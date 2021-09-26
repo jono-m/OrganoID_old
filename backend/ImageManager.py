@@ -3,6 +3,7 @@ from typing import Union, List, Callable
 from PIL import Image, ImageFont, ImageDraw
 from pathlib import Path
 import numpy as np
+import sys
 from skimage.color import label2rgb
 from skimage.filters import sobel
 from backend.Tracker import Tracker
@@ -35,7 +36,20 @@ def LoadImages(source: Union[Path, str, List], size=None, recursive=False, mode=
             for image in LoadImages(source, size, recursive, mode):
                 yield image
         else:
-            rawImage = Image.open(source)
+            if not source.is_file():
+                regex = source.name
+                directory = source.parent
+                source = [path for path in directory.glob(regex) if path.is_file()]
+                sort_paths_nicely(source)
+                for image in LoadImages(source, size, recursive, mode):
+                    yield image
+                return
+
+            try:
+                rawImage = Image.open(source)
+            except Exception as e:
+                print("Could not load. Error " + str(e), file=sys.stderr)
+                return
             numFrames = getattr(rawImage, "n_frames", 1)
             preparedImages = []
             for frame_number in range(numFrames):
