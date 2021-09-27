@@ -2,6 +2,7 @@ import numpy as np
 from commandline.Program import Program
 import argparse
 import pathlib
+import time
 
 
 class Performance(Program):
@@ -37,11 +38,13 @@ class Performance(Program):
 
         cmats_by_threshold = {}
         count = 1
+        times = []
         for image, segmentation in zip(images, segmentations):
             self.printRep("Segmenting image %d: %s" % (count, image.path.name))
             count += 1
+            startTime = time.time()
             predicted = image.DoOperation(ContrastOp).DoOperation(segmenter.Segment)
-
+            times.append(time.time() - startTime)
             if parserArgs.sweep:
                 sweeps = np.linspace(0, 1, parserArgs.sweep)
             else:
@@ -56,7 +59,7 @@ class Performance(Program):
 
         self.printRep()
         print("Done.")
-
+        print("Times: " + str(times))
         if parserArgs.iou:
             ious_by_threshold = {threshold: [IOU(cmat) for cmat in cmats_by_threshold[threshold]] for threshold in
                                  cmats_by_threshold}
@@ -67,6 +70,8 @@ class Performance(Program):
 
             if parserArgs.plot:
                 [plt.hist(ious_by_threshold[threshold], bins="auto") for threshold in ious_by_threshold]
+                plt.xlabel("Intersection-Over-Union")
+                plt.ylabel("Image count")
                 plt.show()
 
         if parserArgs.auc:
