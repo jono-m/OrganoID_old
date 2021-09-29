@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Conv2D, Dropout, MaxPooling2D, Conv2DTranspose, concatenate, \
     BatchNormalization
@@ -13,21 +14,21 @@ class ModelTrainer:
         inputs = Input((inputSize[0], inputSize[1], 1))
 
         currentLayer = inputs
-        currentLayer = BatchNormalization()(currentLayer)
+        # currentLayer = BatchNormalization()(currentLayer)
         contractingLayers = []
         for i in range(5):
             if i > 0:
                 currentLayer = MaxPooling2D((2, 2))(currentLayer)
 
-            currentLayer = BatchNormalization()(currentLayer)
+            # currentLayer = BatchNormalization()(currentLayer)
             size = startSize * 2 ** i
             currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
                 currentLayer)
-            currentLayer = BatchNormalization()(currentLayer)
+            # currentLayer = BatchNormalization()(currentLayer)
             currentLayer = Dropout(dropoutRate * i)(currentLayer)
             currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
                 currentLayer)
-            currentLayer = BatchNormalization()(currentLayer)
+            # currentLayer = BatchNormalization()(currentLayer)
             contractingLayers.append(currentLayer)
 
         for i in reversed(range(4)):
@@ -35,14 +36,14 @@ class ModelTrainer:
 
             currentLayer = Conv2DTranspose(size, (2, 2), strides=(2, 2), padding='same')(currentLayer)
             currentLayer = concatenate([currentLayer, contractingLayers[i]])
-            currentLayer = BatchNormalization()(currentLayer)
+            # currentLayer = BatchNormalization()(currentLayer)
             currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
                 currentLayer)
-            currentLayer = BatchNormalization()(currentLayer)
+            # currentLayer = BatchNormalization()(currentLayer)
             currentLayer = Dropout(dropoutRate * i)(currentLayer)
             currentLayer = Conv2D(size, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(
                 currentLayer)
-            currentLayer = BatchNormalization()(currentLayer)
+            # currentLayer = BatchNormalization()(currentLayer)
 
         final = Conv2D(1, (1, 1), activation='sigmoid')(currentLayer)
 
@@ -85,8 +86,18 @@ class ModelTrainer:
             super().__init__()
             self.i = 0
             self.path = outPath
+            self.trainLosses = []
+            self.validationLosses = []
 
         def on_epoch_end(self, epoch, logs=None):
             savePath = self.path / ("epoch_" + str(epoch) + ".tflite")
 
             ModelTrainer.SaveLiteModel(savePath, ModelTrainer.ConvertToLiteModel(self.model))
+            self.trainLosses.append(str(logs['loss']))
+            self.validationLosses.append(str(logs['val_loss']))
+
+        def on_train_end(self, logs=None):
+            outfile = open(self.path / "losses.csv", "w+")
+            outfile.write("Training loss, " + ",".join(self.trainLosses) + "\n")
+            outfile.write("Validation loss, " + ",".join(self.validationLosses) + "\n")
+            outfile.close()
