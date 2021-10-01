@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 class ModelDataGenerator(tf.keras.utils.Sequence):
-    def __init__(self, imagePaths: Path, segmentationPaths, imageSize, batchSize, contrast=True):
+    def __init__(self, imagePaths: Path, segmentationPaths, imageSize, batchSize, contrast=False):
         self.batchSize = batchSize
         self.imagePaths = np.array([path for path in imagePaths.iterdir() if path.is_file()])
         self.imageSize = imageSize
@@ -37,8 +37,6 @@ class ModelDataGenerator(tf.keras.utils.Sequence):
 
         for imageIndex in range(len(imagePaths)):
             image = next(LoadImages(imagePaths[imageIndex], size=self.imageSize, mode="L"))
-            if self.contrast:
-                image = image.DoOperation(ContrastOp)
             imageData[imageIndex, :, :, 0] = image.frames[0]
         return imageData
 
