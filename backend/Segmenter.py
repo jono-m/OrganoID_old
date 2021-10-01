@@ -5,13 +5,8 @@ except ImportError as e:
 
     Interpreter = tf.lite.Interpreter
 from pathlib import Path
-from backend.ImageManager import ContrastOp
 import numpy as np
-<<<<<<< HEAD
-from backend.ImageManager import ContrastOp
-=======
 import typing
->>>>>>> 23fba20d34949a8efaf36735a4188b019125776b
 
 
 class Segmenter:
@@ -22,15 +17,9 @@ class Segmenter:
         self._output_index = self._interpreter.get_output_details()[0]['index']
         self._interpreter.allocate_tensors()
 
-<<<<<<< HEAD
-    def Segment(self, image: np.ndarray, autoContrast=True) -> np.ndarray:
-        if autoContrast:
-            image = ContrastOp(image)
-=======
     def Segment(self, image: np.ndarray) -> np.ndarray:
         if True:
             image = 255 * ((image - image.min()) / (image.max() - image.min()))
->>>>>>> 23fba20d34949a8efaf36735a4188b019125776b
         image = np.reshape(image, self._inputShape).astype(np.float32)
         self._interpreter.set_tensor(self._inputIndex, image)
         self._interpreter.invoke()
