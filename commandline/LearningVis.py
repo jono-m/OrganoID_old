@@ -36,7 +36,7 @@ class LearningVis(Program):
             segmenter = Segmenter(modelPath)
             count += 1
 
-            segmented_raw = image.DoOperation(ContrastOp).DoOperation(segmenter.Segment)
+            segmented_raw = image.DoOperation(segmenter.Segment)
 
             heatMap = segmented_raw.DoOperation(lambda x: (plt.get_cmap("hot")(x)[:, :, :3] * 255).astype(np.uint8))
             heatMaps.append(heatMap.frames[0])

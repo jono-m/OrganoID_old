@@ -30,7 +30,7 @@ def Edges(image: np.ndarray, foregroundThreshold, watershedThreshold=None):
     return edges
 
 
-def Label(image: np.ndarray, foregroundThreshold: int, watershedThreshold=None):
+def Label(image: np.ndarray, foregroundThreshold: float, watershedThreshold=None):
     foregroundMask = ndimage.binary_opening(image > foregroundThreshold)
     # The negated raw output from the CNN is the heightmap for watershed. Organoid borders will be slightly higher
     # than their centers (detected in the initializer image), and so will form the watershed boundary.

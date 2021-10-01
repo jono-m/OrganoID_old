@@ -42,7 +42,7 @@ class Segment(Program):
             print("Segenting %d: %s" % (count, image.path))
             count += 1
 
-            segmented_raw = image.DoOperation(ContrastOp).DoOperation(segmenter.Segment)
+            segmented_raw = image.DoOperation(segmenter.Segment)
 
             if parserArgs.threshold:
                 outputImages.append(("threshold", segmented_raw.DoOperation(lambda x: x > parserArgs.threshold), None))

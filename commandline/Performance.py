@@ -43,7 +43,7 @@ class Performance(Program):
             self.printRep("Segmenting image %d: %s" % (count, image.path.name))
             count += 1
             startTime = time.time()
-            predicted = image.DoOperation(ContrastOp).DoOperation(segmenter.Segment)
+            predicted = image.DoOperation(segmenter.Segment)
             times.append(time.time() - startTime)
             if parserArgs.sweep:
                 sweeps = np.linspace(0, 1, parserArgs.sweep)
@@ -66,7 +66,8 @@ class Performance(Program):
 
             for threshold in ious_by_threshold:
                 ious = ious_by_threshold[threshold]
-                print("IOU (T=%f): %f\u00B1%f" % (threshold, np.mean(ious), np.std(ious)))
+                std = np.std(ious)
+                print("IOU (T=%f): %f\u00B1%f" % (threshold, np.mean(ious), ))
 
             if parserArgs.plot:
                 [plt.hist(ious_by_threshold[threshold], bins="auto") for threshold in ious_by_threshold]

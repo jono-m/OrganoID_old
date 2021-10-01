@@ -15,7 +15,7 @@ def PostProcess(image: np.ndarray, minimumArea: float = None, borderDiameterCuto
         image = morphology.remove_small_objects(image, minimumArea)
 
     # Remove organoids that are significantly clipped by the image borders.
-    if borderDiameterCutoff:
+    if borderDiameterCutoff is not None:
         image = clearBorders(image, borderDiameterCutoff)
 
     return image

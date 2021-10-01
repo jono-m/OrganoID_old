@@ -6,6 +6,7 @@ import numpy as np
 import sys
 from skimage.color import label2rgb
 from skimage.filters import sobel
+from skimage.measure import regionprops
 from backend.Tracker import Tracker
 
 
@@ -99,9 +100,19 @@ def SaveImage(image: np.ndarray, path: Path):
     Image.fromarray(image).save(path)
 
 
-def LabelToRGB(image: np.ndarray):
+def LabelToRGB(image: np.ndarray, drawText=False):
     labeled = (label2rgb(image, bg_label=0) * 255).astype(np.uint8)
 
+    if drawText:
+        font = ImageFont.truetype("arial.ttf", 16)
+        regionProperties = regionprops(image)
+
+        withTextImage = Image.fromarray(labeled)
+        drawer = ImageDraw.Draw(withTextImage)
+        for regionProperty in regionProperties:
+            (y, x) = regionProperty.centroid
+            drawer.text((x, y), str(regionProperty.label), anchor="ms", fill=(255, 255, 255, 255), font=font)
+        labeled = np.asarray(withTextImage)
     return labeled
 
 
