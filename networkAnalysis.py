@@ -38,8 +38,8 @@ def confusionMatrix(true: np.ndarray, predicted: np.ndarray):
     return np.asarray([[TP, FP], [FN, TN]])
 
 
-imagesPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\TData\images")
-segmentationsPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\TData\segmentations")
+imagesPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\NovelData\images")
+segmentationsPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\NovelData\segmentations")
 modelPath = Path(r"assets\model.tflite")
 
 images = LoadImages(imagesPath, (512, 512), mode="L")
