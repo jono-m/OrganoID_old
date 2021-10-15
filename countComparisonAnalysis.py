@@ -12,7 +12,7 @@ lines = [[int(x) for x in y] for y in lines]
 predictedAreas = [line for (lineNumber, line) in enumerate(lines) if lineNumber % 2 == 0][:-1]
 manualAreas = [line for (lineNumber, line) in enumerate(lines) if lineNumber % 2 == 1]
 
-cutoff = 1000
+cutoff = 200
 predictedAreas = [[x for x in y if x > cutoff] for y in predictedAreas]
 manualAreas = [[x for x in y if x > cutoff] for y in manualAreas]
 

@@ -19,6 +19,9 @@ class Track(Program):
         parser.add_argument("-B", dest="brightness", default=1,
                             help="Brightness multiplier for input image.",
                             type=float)
+        parser.add_argument("-D", dest="deleteAfter", default=10,
+                            help="Frames after lost track to delete track.",
+                            type=float)
         parser.add_argument("-CM", dest="missingCost", default=20,
                             help="Cost for considering an organoid as 'lost' for a frame, instead of assigning it to an"
                                  " existing organoid track. A higher value assumes that organoids are rarely lost in "
@@ -47,6 +50,7 @@ class Track(Program):
         tracker = Tracker()
         tracker.costOfMissingOrganoid = parserArgs.missingCost
         tracker.costOfNewOrganoid = parserArgs.newCost
+        tracker.deleteTracksAfterMissing = parserArgs.deleteAfter
 
         for image in images:
             print("Tracking %d: %s" % (count, image.path))
@@ -70,10 +74,10 @@ class Track(Program):
                     fileName = "trackResults_" + str(i) + ".png"
                     i += 1
                     savePath = parserArgs.outputPath / self.JobName() / fileName
-                    SaveImage(outputImage.frames[0], savePath)
+                    SaveImage(outputImage, savePath)
 
             if parserArgs.analyze:
-                with open(parserArgs.outputPath / self.JobName() / (self.JobName() + ".csv"), 'w',
+                with open(parserArgs.outputPath / self.JobName() / (self.JobName() + ".csv"), 'w+',
                           newline='') as csvfile:
                     csvfile.write(
                         "Organoid ID, " + ", ".join([("Area(t=%d)" % i) for i in range(len(outputImages))]) + "\n")

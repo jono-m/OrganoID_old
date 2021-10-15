@@ -57,7 +57,7 @@ class Tracker:
     def __init__(self):
         self._tracks: List[Tracker.OrganoidTrack] = []
         self.distanceCost = 1
-        self.areaCost = 0
+        self.areaCost = 2
         self.costOfNewOrganoid = 100
         self.costOfMissingOrganoid = 20
         self.deleteTracksAfterMissing = 10
@@ -118,9 +118,10 @@ class Tracker:
                 # This got assigned to an existing track.
                 availableTracks[trackIndex].Detect(centroid, area, objectCoordinates, image, bbox)
 
-        for track in availableTracks:
-            if track.invisibleConsecutive >= self.deleteTracksAfterMissing:
-                track.active = False
+        if self.deleteTracksAfterMissing >= 0:
+            for track in availableTracks:
+                if track.invisibleConsecutive >= self.deleteTracksAfterMissing:
+                    track.active = False
 
         self.frame += 1
 
@@ -132,4 +133,4 @@ class Tracker:
         return distances * self.distanceCost
 
     def AreaCost(self, areaA, bAreas):
-        return abs(areaA - bAreas) * self.areaCost
+        return abs(np.sqrt(areaA) - np.sqrt(bAreas)) * self.areaCost
