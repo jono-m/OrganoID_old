@@ -18,7 +18,13 @@ cutoff = 1000
 predictedAreas = [area for frame in predictedAreas for area in frame]
 manualAreas = [area for frame in manualAreas for area in frame]
 areas = np.stack([predictedAreas, manualAreas]).transpose()
-areas = areas[np.all(areas > 500, axis=1), :]
+areas = areas[np.all(areas > 200, axis=1), :]
+
+csvFile = open(r"C:\Users\jonoj\Documents\ML\SingleComparison\areasFormatted.csv", "w+")
+csvFile.write("OrganoID, Manual\n")
+for organoidNum in range(np.size(areas, 0)):
+    csvFile.write("%d, %d\n" % (areas[organoidNum, 0], areas[organoidNum, 1]))
+csvFile.close()
 
 predictedAreas = areas[:, 0]
 manualAreas = areas[:, 1]
