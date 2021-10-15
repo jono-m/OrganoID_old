@@ -82,7 +82,8 @@ class Track(Program):
                     csvfile.write(
                         "Organoid ID, " + ", ".join([("Area(t=%d)" % i) for i in range(len(outputImages))]) + "\n")
                     for track in tracker.GetTracks():
-                        areas = []
+                        areas = ["" for i in range(track.firstFrame)]
+
                         for data in track.data:
                             if data.detection:
                                 areas.append(str(data.area))
