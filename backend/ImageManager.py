@@ -120,7 +120,7 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
                 baseImages):
     images = []
 
-    font = ImageFont.truetype("arial.ttf", 16)
+    font = ImageFont.truetype("arial.ttf", 26)
 
     for frame, baseImage in enumerate(baseImages):
         print("Labeling " + str(frame))
