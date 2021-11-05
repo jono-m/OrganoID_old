@@ -1,1 +1,0 @@
-python OrganoID.py augment C:\Users\jonoj\Documents\ML\SplitAugustData\split_2021_08_17_10_07_04\training\ 2000 -O C:\Users\jonoj\Documents\ML\Augmented\

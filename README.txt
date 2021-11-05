@@ -2,26 +2,27 @@ REQUIREMENTS:
 
 OrganoID was run with the following software configuration:
 - Windows 10 64-bit
-- python 3.8
+- Python 3.8
 
 ---
 
 INSTALLATION:
 
-To set up OrganoID with python 3.8, run one of the following commands from the OrganoID directory, depending on your use case:
+To set up OrganoID dependencies, run one of the following commands in your Python environment, depending on your use
+case.
 
 OrganoID standard:
->> pip install -r requirements.txt
+>> pip install -r [\path\to\OrganoID\]requirements.txt
 
 OrganoID with support for reproducing figures and statistics from publication:
->> pip install -r requirementsFiguresAndData.txt
+>> pip install -r [\path\to\OrganoID\]requirementsFiguresAndData.txt
 
 OrganoID with support for model training and data augmentation:
->> pip install -r requirementsTrainingSuite.txt
+>> pip install -r [\path\to\OrganoID\]requirementsTrainingSuite.txt
 
 ---
 
-USE:
+INSTRUCTIONS:
 
 OrganoID is run from the command line. To see instructions for use, run:
 

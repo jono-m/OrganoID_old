@@ -1,1 +1,0 @@
-python OrganoID.py segment assets\model.tflite "Z:\ML_Organoid\Paper\Data\Testing Images" -O C:\Users\jonoj\Documents\ML\Segmentations -T 0.5 --raw --heat

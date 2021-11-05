@@ -1,16 +1,13 @@
+# Program.py -- a generic class for a sub-program of OrganoID.
+
 import argparse
 from abc import ABC, abstractmethod
-import datetime
 
 
 class Program(ABC):
     def __init__(self):
-        self._jobName = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         self._lastPrint = ""
 
-    def JobName(self):
-        return self.Name() + "_" + self._jobName
-    
     @abstractmethod
     def Name(self):
         pass

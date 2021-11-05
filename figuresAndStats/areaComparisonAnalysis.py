@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 plt.rcParams['svg.fonttype'] = 'none'
-from util.stats import pearsonr_ci, linr_ci
+from figuresAndStats.stats import pearsonr_ci, linr_ci
 
 csvFile = open(r"C:\Users\jonoj\Google Drive\Research\OrganoID\Data\TestingData\SingleComparison\areas.csv", "r")
 data = csvFile.read()

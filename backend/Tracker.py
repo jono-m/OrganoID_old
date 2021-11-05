@@ -1,3 +1,5 @@
+# Tracker.py -- tracks organoids in sequences of labeled images
+
 from typing import List
 import numpy as np
 from skimage.measure import regionprops
@@ -5,34 +7,43 @@ from scipy.optimize import linear_sum_assignment
 
 
 class Tracker:
-    class TrackData:
-        def __init__(self, centroid, area, pixels, detection, image, bbox):
+    # Data point for one frame for one organoid
+    class OrganoidFrameData:
+        def __init__(self, centroid, area, pixels, wasDetected, image, bbox):
             self.centroid = centroid
             self.area = area
             self.pixels = pixels
-            self.detection = detection
+            self.wasDetected = wasDetected
             self.image = image
             self.bbox = bbox
 
         def Duplicate(self):
-            return Tracker.TrackData(self.centroid, self.area, self.pixels, self.detection, self.image, self.bbox)
+            # Clone this data point
+            return Tracker.OrganoidFrameData(self.centroid, self.area, self.pixels, self.wasDetected, self.image,
+                                             self.bbox)
 
     class OrganoidTrack:
+        # Collection of data points for a single identified organoid
+
+        # Static counter to assign the next organoid ID
         nextID = 1
 
-        def __init__(self, frame, centroid, area, pixels, image, bbox):
+        def __init__(self, frame):
             self.id = Tracker.OrganoidTrack.nextID
             Tracker.OrganoidTrack.nextID += 1
-            self.data = [Tracker.TrackData(centroid, area, pixels, True, image, bbox)]
+
             self.active = True
             self.firstFrame = frame
             self.age = 0
             self.invisibleConsecutive = 0
+            self.data = []
 
         def DataAtFrame(self, frame):
+            # Retrieve the datapoint for the given frame
             if frame < self.firstFrame:
                 return None
             else:
+                # Frame number relative to when this track started
                 local = frame - self.firstFrame
                 if local >= len(self.data):
                     return None
@@ -40,8 +51,9 @@ class Tracker:
                     return self.data[local]
 
         def NoDetection(self):
+            # Report no detection of this track for the current frame
             data = self.data[-1].Duplicate()
-            data.detection = False
+            data.wasDetected = False
             self.data.append(data)
             self.invisibleConsecutive += 1
             self.age += 1
@@ -50,7 +62,8 @@ class Tracker:
             return self.data[-1]
 
         def Detect(self, centroid, area, pixels, image, bbox):
-            self.data.append(Tracker.TrackData(centroid, area, pixels, True, image, bbox))
+            # Report a detection of this track at this frame
+            self.data.append(Tracker.OrganoidFrameData(centroid, area, pixels, True, image, bbox))
             self.invisibleConsecutive = 0
             self.age += 1
 
@@ -64,60 +77,73 @@ class Tracker:
         self.frame = 0
 
     def Track(self, image: np.ndarray):
+        # Morphologically analyze labled regions in the image
         detections = regionprops(image)
         centroids = np.array([detection.centroid for detection in detections])
         coordinates = [detection.coords for detection in detections]
         images = [detection.image for detection in detections]
         bboxes = [detection.bbox for detection in detections]
         areas = np.array([detection.area for detection in detections])
+
+        # Get all currently active organoid tracks
         availableTracks = [track for track in self._tracks if track.active]
         numTracks = len(availableTracks)
         numDetections = len(detections)
 
+        # Build cost matrix (larger size with "dummy" rows and columns allows for assignment of detections to new tracks
+        # or of existing tracks to missing detections.
         fullSize = numTracks + numDetections
         costMatrix = np.zeros([fullSize, fullSize])
 
+        # Fill in the cost of creating a new track
         newOrganoidMatrix = np.full([numDetections, numDetections], np.inf)
         np.fill_diagonal(newOrganoidMatrix, self.costOfNewOrganoid)
+        costMatrix[numTracks:, :numDetections] = newOrganoidMatrix
 
+        # Fill in the cost of considering an organoid as as missing
         missingOrganoidMatrix = np.full([numTracks, numTracks], np.inf)
         np.fill_diagonal(missingOrganoidMatrix, self.costOfMissingOrganoid)
-
-        costMatrix[numTracks:, :numDetections] = newOrganoidMatrix
         costMatrix[:numTracks, numDetections:] = missingOrganoidMatrix
 
+        # Fill in the cost of assignment for each track to each detection
         for trackNumber in range(numTracks):
             distanceCosts = self.DistanceCost(availableTracks[trackNumber].LastData().centroid, centroids)
             areaCosts = self.AreaCost(availableTracks[trackNumber].LastData().area, areas)
             costMatrix[trackNumber, 0:numDetections] = distanceCosts + areaCosts
 
+        # Solve the assignment problem (Hungarian algorithm)
         trackIndices, detectionIndices = linear_sum_assignment(costMatrix)
+
+        # Handle assignments
         for assignmentIndex in range(trackIndices.size):
             trackIndex = trackIndices[assignmentIndex]
             detectionIndex = detectionIndices[assignmentIndex]
-            if detectionIndex >= numDetections:
-                # Track didn't get assigned.
-                if trackIndex >= numTracks:
-                    # It's a dummy track.
-                    continue
-                else:
-                    # The track lost its target for this frame.
-                    availableTracks[trackIndex].NoDetection()
-                    continue
 
-            area = areas[detectionIndex]
-            centroid = centroids[detectionIndex]
-            image = images[detectionIndex]
-            bbox = bboxes[detectionIndex]
-            objectCoordinates = coordinates[detectionIndex]
+            if detectionIndex >= numDetections and trackIndex >= numTracks:
+                # This is a dummy track and dummy detection. Can skip it.
+                continue
+
+            if detectionIndex >= numDetections:
+                # Track didn't get assigned to a detection, so it lost its target for this frame.
+                availableTracks[trackIndex].NoDetection()
+                continue
+
             if trackIndex >= numTracks:
-                # This got assigned to a new track!
-                matchedTrack = Tracker.OrganoidTrack(self.frame, centroid, area, objectCoordinates, image, bbox)
-                self._tracks.append(matchedTrack)
+                # This organoid didn't get assigned to an existing track, so it must be new!
+                track = Tracker.OrganoidTrack(self.frame)
+                self._tracks.append(track)
             else:
                 # This got assigned to an existing track.
-                availableTracks[trackIndex].Detect(centroid, area, objectCoordinates, image, bbox)
+                track = availableTracks[trackIndex]
 
+            # Register the detection.
+            track.Detect(centroids[detectionIndex],
+                         areas[detectionIndex],
+                         coordinates[detectionIndex],
+                         images[detectionIndex],
+                         bboxes[detectionIndex])
+
+        # Go through all tracks and inactivate any that have been missing for more than a given number of frames.
         if self.deleteTracksAfterMissing >= 0:
             for track in availableTracks:
                 if track.invisibleConsecutive >= self.deleteTracksAfterMissing:
