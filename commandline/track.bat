@@ -1,0 +1,1 @@
+python OrganoID.py track C:\Users\jonoj\Documents\ML\PipelineResults\pipeline_2021_10_13_10_26_44 C:\Users\jonoj\Documents\ML\trackingdata\20210127_organoidplate003_XY36_Z3_C2.tif -B 1.5 --gif --analyze --individual --label -O C:\Users\jonoj\Documents\ML\TrackingResults -CM 5 -CN 200 -D -1

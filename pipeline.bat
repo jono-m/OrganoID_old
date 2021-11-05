@@ -1,1 +1,0 @@
-python OrganoID.py pipeline assets\model.tflite C:\Users\jonoj\Documents\ML\trackingdata\20210127_organoidplate003_XY36_Z3_C2.tif -T 0.5 -A 100 --raw -O C:\Users\jonoj\Documents\ML\PipelineResults
