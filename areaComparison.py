@@ -21,16 +21,16 @@ def Relabel(a: np.ndarray, b: np.ndarray, labelPairs):
 
 modelPath = Path(r"assets\model.tflite")
 imagesPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\images")
-segmentationsPath = Path(r"C:\Users\jonoj\Documents\ML\TestCountData")
+segmentationsPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\images")
 outputPath = Path(r"C:\Users\jonoj\Documents\ML\SingleComparison\areas.csv")
 
 segmenter = Segmenter(modelPath)
 
 images = LoadImages(imagesPath, [512, 512], mode="L")
 segmentations = LoadImages(segmentationsPath, [512, 512], mode="1")
-
 organoidAreas = []
 for (image, segmentation) in zip(images, segmentations):
+    print("Segmenting " + str(image.path))
     predicted = segmenter.Segment(image.frames[0])
     predictedLabeled = PostProcess(Label(predicted, 0.5))
 

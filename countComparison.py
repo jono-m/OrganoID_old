@@ -24,7 +24,7 @@ def MatchLabels(a: np.ndarray, b: np.ndarray, aLabels, bLabels, aIsMaster):
 
 modelPath = Path(r"assets\model.tflite")
 imagesPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\images")
-segmentationsPath = Path(r"C:\Users\jonoj\Documents\ML\TestCountData")
+segmentationsPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\segmentations")
 outputPath = Path(r"C:\Users\jonoj\Documents\ML\SingleComparison\counts.csv")
 
 segmenter = Segmenter(modelPath)

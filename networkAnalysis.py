@@ -1,16 +1,6 @@
 from pathlib import Path
-from backend.Segmenter import Segmenter
-from backend.ImageManager import LoadImages, LabelToRGB, ShowImage
-from backend.Label import Label
-from backend.PostProcessing import PostProcess
-from scipy.optimize import linear_sum_assignment
 import numpy as np
-from skimage.measure import regionprops
-import scipy.ndimage as ndimage
-from sklearn.metrics import auc
-from backend.Segmenter import Segmenter
-from backend.ImageManager import LoadImages, ContrastOp
-import matplotlib.pyplot as plt
+from backend.ImageManager import LoadImages
 
 
 def IOU(cmat):
@@ -38,26 +28,27 @@ def confusionMatrix(true: np.ndarray, predicted: np.ndarray):
     return np.asarray([[TP, FP], [FN, TN]])
 
 
-imagesPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\NovelData\images")
-segmentationsPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\NovelData\segmentations")
+predictionsPath = Path(r"Z:\ML_Organoid\Paper\Data\Testing Predictions\*_threshold*")
+groundTruthPath = Path(r"Z:\ML_Organoid\Paper\Data\Testing Ground Truth")
 modelPath = Path(r"assets\model.tflite")
 
-images = LoadImages(imagesPath, (512, 512), mode="L")
-segmentations = LoadImages(segmentationsPath, (512, 512), mode="1")
-
-segmenter = Segmenter(modelPath)
-
+predictions = LoadImages(predictionsPath, (512, 512), mode="1")
+groundTruths = LoadImages(groundTruthPath, (512, 512), mode="1")
+groundTruths = list(groundTruths)
 confusionMatrices = []
-for image, segmentation in zip(images, segmentations):
-    print("Segmenting %s" % image.path.name)
-    predicted = image.DoOperation(segmenter.Segment)
-    cmats = [confusionMatrix(segmentationFrame, predictedFrame > 0.5) for
-             segmentationFrame, predictedFrame in zip(segmentation.frames, predicted.frames)]
+filenames = [gt.path for gt in groundTruths]
+for prediction, groundTruth in zip(predictions, groundTruths):
+    cmats = [confusionMatrix(segmentationFrame, predictedFrame) for
+             segmentationFrame, predictedFrame in zip(groundTruth.frames, prediction.frames)]
     confusionMatrices += cmats
 
 ious = [IOU(list(cmat.flatten())) for cmat in confusionMatrices]
 
-ci = 2.262 * np.std(ious)/np.sqrt(len(ious))
+csvFile = open(r"C:\Users\jonoj\Documents\ML\ious.csv", "w+")
+csvFile.write("Filename, IOU\n")
+for filename, iou in zip(filenames, ious):
+    csvFile.write(filename.name + ", " + str(iou) + "\n")
+
 mean = np.mean(ious)
 print("Mean IOU: %.4f (95%% CI %.4f-%.4f)" % (mean, mean-ci, mean+ci))
 print("Variance: " + str(np.var(ious)))

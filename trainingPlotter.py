@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+plt.rcParams['svg.fonttype'] = 'none'
 import numpy as np
 
 trainingData = open(r"C:\Users\jonoj\Documents\ML\trainingLoss.csv", "r").read().split(",")

@@ -1,5 +1,6 @@
 from pathlib import Path
 import matplotlib.pyplot as plt
+plt.rcParams['svg.fonttype'] = 'none'
 import numpy as np
 
 from tensorflow.keras.losses import BinaryCrossentropy, binary_crossentropy

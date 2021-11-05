@@ -48,6 +48,7 @@ class ModelTrainer:
         final = Conv2D(1, (1, 1), activation='sigmoid')(currentLayer)
 
         self._model = Model(inputs=[inputs], outputs=[final])
+        self._model.summary()
 
     def Train(self, learningRate, patience, epochs, trainingDataGenerator: ModelDataGenerator,
               testingDataGenerator: ModelDataGenerator,

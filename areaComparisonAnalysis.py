@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams['svg.fonttype'] = 'none'
 from util.stats import pearsonr_ci, linr_ci
 
 csvFile = open(r"C:\Users\jonoj\Documents\ML\SingleComparison\areas.csv", "r")
