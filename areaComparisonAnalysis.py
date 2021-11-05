@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from util.stats import pearsonr_ci, linr_ci
 
-csvFile = open(r"C:\Users\jonoj\Documents\ML\SingleComparison\areas.csv", "r")
+csvFile = open(r"C:\Users\jonoj\Google Drive\Research\OrganoID\Data\TestingData\SingleComparison\areas.csv", "r")
 data = csvFile.read()
 lines = data.split("\n")
 lines = [line.split(", ") for line in lines]
@@ -13,18 +13,10 @@ lines = [[int(x) for x in y] for y in lines]
 predictedAreas = [line for (lineNumber, line) in enumerate(lines) if lineNumber % 2 == 0][:-1]
 manualAreas = [line for (lineNumber, line) in enumerate(lines) if lineNumber % 2 == 1]
 
-cutoff = 1000
-
 predictedAreas = [area for frame in predictedAreas for area in frame]
 manualAreas = [area for frame in manualAreas for area in frame]
 areas = np.stack([predictedAreas, manualAreas]).transpose()
 areas = areas[np.all(areas > 200, axis=1), :]
-
-csvFile = open(r"C:\Users\jonoj\Documents\ML\SingleComparison\areasFormatted.csv", "w+")
-csvFile.write("OrganoID, Manual\n")
-for organoidNum in range(np.size(areas, 0)):
-    csvFile.write("%d, %d\n" % (areas[organoidNum, 0], areas[organoidNum, 1]))
-csvFile.close()
 
 predictedAreas = areas[:, 0]
 manualAreas = areas[:, 1]
@@ -55,7 +47,7 @@ labels = [(mean, "Mean=%.2f" % mean, "b"),
 plt.axhline(y=mean, color="b", linestyle="solid")
 plt.axhline(y=mean + std * 1.96, color="r", linestyle="dashed")
 plt.axhline(y=mean - std * 1.96, color="r", linestyle="dashed")
-plt.xlabel("Average of OrganoID and manual area")
+plt.xlabel("Average of OrganoID and manual area ($\mu m^2)")
 plt.ylabel("Difference between OrganoID and manual area")
 plt.title("Bland-Altman plot of OrganoID and manual organoid area")
 plt.ylim([min(differences) - 2, -min(differences) + 2])

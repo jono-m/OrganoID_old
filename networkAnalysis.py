@@ -38,8 +38,8 @@ def confusionMatrix(true: np.ndarray, predicted: np.ndarray):
     return np.asarray([[TP, FP], [FN, TN]])
 
 
-imagesPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\NovelData\images")
-segmentationsPath = Path(r"C:\Users\jonoj\Documents\ML\TestingData\NovelData\segmentations")
+imagesPath = Path(r"C:\Users\jonoj\Google Drive\Research\OrganoID\Data\TestingData\ACCData\images")
+segmentationsPath = Path(r"C:\Users\jonoj\Google Drive\Research\OrganoID\Data\TestingData\ACCData\segmentations")
 modelPath = Path(r"assets\model.tflite")
 
 images = LoadImages(imagesPath, (512, 512), mode="L")
@@ -57,7 +57,7 @@ for image, segmentation in zip(images, segmentations):
 
 ious = [IOU(list(cmat.flatten())) for cmat in confusionMatrices]
 
-ci = 2.262 * np.std(ious)/np.sqrt(len(ious))
+std = np.std(ious)
 mean = np.mean(ious)
-print("Mean IOU: %.4f (95%% CI %.4f-%.4f)" % (mean, mean-ci, mean+ci))
+print("Mean IOU: %.4f (+- %.4f)" % (mean, std))
 print("Variance: " + str(np.var(ious)))
