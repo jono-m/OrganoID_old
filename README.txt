@@ -2,7 +2,9 @@ REQUIREMENTS:
 
 OrganoID was run with the following software configuration:
 - Windows 10 64-bit
-- Python 3.8
+- P
+
+ython 3.8
 
 ---
 
