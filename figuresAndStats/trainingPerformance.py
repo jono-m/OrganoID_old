@@ -2,11 +2,12 @@ import matplotlib.pyplot as plt
 plt.rcParams['svg.fonttype'] = 'none'
 import numpy as np
 
-trainingData = open(r"C:\Users\jonoj\Documents\ML\trainingLoss.csv", "r").read().split(",")
-trainingLosses = np.asarray([float(x) for x in trainingData])
-
-validationData = open(r"C:\Users\jonoj\Documents\ML\validationLoss2.csv", "r").read().split(",")
-validationLosses = np.asarray([float(x) for x in validationData])
+lines = open(r"figuresAndStats\trainingLosses.csv", "r").read().split("\n")[1:-1]
+losses = np.asarray([[float(x) for x in line.split(",")] for line in lines])
+print(losses.shape)
+epoch = losses[:, 0]
+trainingLosses = losses[:, 1]
+validationLosses = losses[:, 2]
 
 plt.plot(trainingLosses, "r")
 plt.plot(validationLosses, "b")
