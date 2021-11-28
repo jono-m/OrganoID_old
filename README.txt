@@ -12,7 +12,8 @@ To set up OrganoID dependencies, you could set up a venv environment first via
 
 >> pip install virtualenv
 >> virtualenv OrganoIDVenv
->> source OrganoIDVenv/bin/activate
+>> cd OrganoIDVenv/Scripts/
+>> activate.bat
 
 Then, you could run one of the following commands in your Python environment, depending on your use case. 
 
