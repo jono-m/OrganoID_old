@@ -140,7 +140,7 @@ class MainWindow(QMainWindow):
 
     def UpdateSlider(self, value):
         if self.applyButton.isEnabled():
-            ret = QMessageBox.question(self, "Confirm switch", "Unsaved changes. Do you want to switch images?")
+            ret = QMessageBox.question(self, "Confirm switching", "Unsaved changes. Do you want to switch images?")
             if ret == QMessageBox.No:
                 self.slider.blockSignals(True)
                 self.slider.setValue(self.currentFrameNumber)
