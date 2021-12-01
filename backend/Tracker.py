@@ -9,18 +9,19 @@ from scipy.optimize import linear_sum_assignment
 class Tracker:
     # Data point for one frame for one organoid
     class OrganoidFrameData:
-        def __init__(self, centroid, area, pixels, wasDetected, image, bbox):
+        def __init__(self, centroid, area, pixels, wasDetected, image, bbox, label):
             self.centroid = centroid
             self.area = area
             self.pixels = pixels
             self.wasDetected = wasDetected
             self.image = image
             self.bbox = bbox
+            self.label = label
 
         def Duplicate(self):
             # Clone this data point
             return Tracker.OrganoidFrameData(self.centroid, self.area, self.pixels, self.wasDetected, self.image,
-                                             self.bbox)
+                                             self.bbox, self.label)
 
     class OrganoidTrack:
         # Collection of data points for a single identified organoid
@@ -61,9 +62,9 @@ class Tracker:
         def LastData(self):
             return self.data[-1]
 
-        def Detect(self, centroid, area, pixels, image, bbox):
+        def Detect(self, centroid, area, pixels, image, bbox, label):
             # Report a detection of this track at this frame
-            self.data.append(Tracker.OrganoidFrameData(centroid, area, pixels, True, image, bbox))
+            self.data.append(Tracker.OrganoidFrameData(centroid, area, pixels, True, image, bbox, label))
             self.invisibleConsecutive = 0
             self.age += 1
 
@@ -83,6 +84,7 @@ class Tracker:
         coordinates = [detection.coords for detection in detections]
         images = [detection.image for detection in detections]
         bboxes = [detection.bbox for detection in detections]
+        labels = [detection.label for detection in detections]
         areas = np.array([detection.area for detection in detections])
 
         # Get all currently active organoid tracks
@@ -141,7 +143,8 @@ class Tracker:
                          areas[detectionIndex],
                          coordinates[detectionIndex],
                          images[detectionIndex],
-                         bboxes[detectionIndex])
+                         bboxes[detectionIndex],
+                         labels[detectionIndex])
 
         # Go through all tracks and inactivate any that have been missing for more than a given number of frames.
         if self.deleteTracksAfterMissing >= 0:

@@ -171,7 +171,7 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
             drawer.text((x, y), str(track.id), anchor="ms", fill=labelColor, font=font)
 
         baseImage = Image.fromarray(baseImage).convert(mode="RGBA")
-        pilImage = Image.alpha_composite(baseImage, pilImage)
+        pilImage = Image.alpha_composite(baseImage, pilImage).convert(mode="RGB")
         images.append(np.asarray(pilImage))
     return images
 
