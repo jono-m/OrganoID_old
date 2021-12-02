@@ -22,12 +22,12 @@ class Track(Program):
         parser.add_argument("-D", dest="deleteAfter", default=-1,
                             help="Discard a track when it has been missing for a given number of frames.",
                             type=float)
-        parser.add_argument("-CM", dest="missingCost", default=10,
+        parser.add_argument("-CM", dest="missingCost", default=1,
                             help="Cost for considering an organoid as 'lost' for a frame, instead of assigning it to an"
                                  " existing organoid track. A higher value assumes that organoids are rarely lost in "
                                  "sequential images. A lower value allows for more forgiveness. Values are "
                                  "in pixels, as relative to the distance an organoid might move over one frame.")
-        parser.add_argument("-CN", dest="newCost", default=200,
+        parser.add_argument("-CN", dest="newCost", default=1,
                             help="Cost for considering an organoid as 'new' for a frame, instead of assigning it to an"
                                  " existing organoid track. A higher value assumes that new organoids rarely "
                                  "appear in sequential images (after the first image). "
@@ -53,9 +53,10 @@ class Track(Program):
 
         # Track images
         for image in labeledImages:
-            print("Tracking %d: %s" % (count, image.path))
-            count += 1
-            [tracker.Track(frame) for frame in image.frames]
+            for i, frame in enumerate(image.frames):
+                tracker.Track(frame)
+                print("Tracking %d: %s (%d)" % (count, image.path, i))
+                count += 1
 
         # Load original images
         originalImages = LoadImages(parserArgs.originalImagesPath, size=[512, 512], mode='L')
@@ -76,16 +77,13 @@ class Track(Program):
                 SaveImage(outputImage, savePath)
 
         # Export track data
-        with open(parserArgs.outputPath / "trackResults.csv", 'w+', newline='') as csvfile:
-            csvfile.write(
-                "Organoid ID, " + ", ".join([("Area(t=%d)" % i) for i in range(len(outputImages))]) + "\n")
+        csvFile = open(parserArgs.outputPath / "trackResults.csv", 'w+')
+        csvFile.write("Frame, Original Label, Organoid ID\n")
+        for frameNumber in range(count - 1):
             for track in tracker.GetTracks():
-                areas = ["" for i in range(track.firstFrame)]
-
-                for data in track.data:
-                    if data.wasDetected:
-                        areas.append(str(data.area))
-                    else:
-                        areas.append("Missing")
-                line = str(track.id) + ", " + ", ".join(areas) + "\n"
-                csvfile.write(line)
+                data = track.DataAtFrame(frameNumber)
+                if data is None or not data.wasDetected:
+                    continue
+                else:
+                    csvFile.write("%d, %d, %d\n" % (frameNumber, data.label, track.id))
+        csvFile.close()

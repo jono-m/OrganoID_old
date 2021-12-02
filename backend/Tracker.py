@@ -37,7 +37,7 @@ class Tracker:
             self.firstFrame = frame
             self.age = 0
             self.invisibleConsecutive = 0
-            self.data = []
+            self.data: List[Tracker.OrganoidFrameData] = []
 
         def DataAtFrame(self, frame):
             # Retrieve the datapoint for the given frame
@@ -70,8 +70,9 @@ class Tracker:
 
     def __init__(self):
         self._tracks: List[Tracker.OrganoidTrack] = []
-        self.distanceCost = 1
-        self.areaCost = 2
+        self.distanceCost = 0
+        self.overlapCost = 1
+        self.areaCost = 0
         self.costOfNewOrganoid = 100
         self.costOfMissingOrganoid = 20
         self.deleteTracksAfterMissing = 10
@@ -109,9 +110,11 @@ class Tracker:
 
         # Fill in the cost of assignment for each track to each detection
         for trackNumber in range(numTracks):
-            distanceCosts = self.DistanceCost(availableTracks[trackNumber].LastData().centroid, centroids)
-            areaCosts = self.AreaCost(availableTracks[trackNumber].LastData().area, areas)
-            costMatrix[trackNumber, 0:numDetections] = distanceCosts + areaCosts
+            overlapCosts = self.OverlapCost(availableTracks[trackNumber].LastData().pixels, coordinates)
+            # distanceCosts = self.DistanceCost(availableTracks[trackNumber].LastData().centroid, centroids)
+            # areaCosts = self.AreaCost(availableTracks[trackNumber].LastData().area, areas)
+            # costMatrix[trackNumber, 0:numDetections] = distanceCosts + areaCosts + overlapCosts
+            costMatrix[trackNumber, 0:numDetections] = overlapCosts
 
         # Solve the assignment problem (Hungarian algorithm)
         trackIndices, detectionIndices = linear_sum_assignment(costMatrix)
@@ -152,10 +155,22 @@ class Tracker:
                 if track.invisibleConsecutive >= self.deleteTracksAfterMissing:
                     track.active = False
 
+        print("Number of currently tracked organoids: %d" + str(len(self._tracks)))
         self.frame += 1
 
     def GetTracks(self):
         return self._tracks
+
+    def OverlapCost(self, coordinatesA, bCoordinates):
+        overlaps = []
+        for coordinatesB in bCoordinates:
+            overlap = np.count_nonzero((coordinatesA[:, None] == coordinatesB).all(-1).any(-1))
+            if overlap == 0:
+                overlap = np.inf
+            else:
+                overlap = 100 / overlap
+            overlaps.append(overlap * self.overlapCost)
+        return np.asarray(overlaps)
 
     def DistanceCost(self, centroidA, bCentroids):
         distances = np.sqrt(np.sum(np.square(bCentroids - centroidA), axis=1))
