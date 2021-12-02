@@ -157,7 +157,7 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
             if data.wasDetected:
                 color = presentColor
             else:
-                color = missingColor
+                continue
 
             drawer.point(fillCoords, color + (fillAlpha,))
             borderCoords = ComputeOutline(data.image)

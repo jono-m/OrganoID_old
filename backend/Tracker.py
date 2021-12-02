@@ -54,6 +54,7 @@ class Tracker:
         def NoDetection(self):
             # Report no detection of this track for the current frame
             data = self.data[-1].Duplicate()
+            data.label = None
             data.wasDetected = False
             self.data.append(data)
             self.invisibleConsecutive += 1
