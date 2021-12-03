@@ -6,6 +6,19 @@ from skimage.measure import regionprops
 from scipy.optimize import linear_sum_assignment
 
 
+class Printer:
+    _lastPrint = ""
+
+    @staticmethod
+    def printRep(text=None):
+        if text is None:
+            print("")
+            Printer._lastPrint = ""
+        else:
+            print("\b" * len(Printer._lastPrint) + text, end='\r')
+            Printer._lastPrint = text
+
+
 class Tracker:
     # Data point for one frame for one organoid
     class OrganoidFrameData:
@@ -109,14 +122,17 @@ class Tracker:
         np.fill_diagonal(missingOrganoidMatrix, self.costOfMissingOrganoid)
         costMatrix[:numTracks, numDetections:] = missingOrganoidMatrix
 
+        print("Computing cost matrix... ")
         # Fill in the cost of assignment for each track to each detection
         for trackNumber in range(numTracks):
+            Printer.printRep("(Track %d/%d)" % (trackNumber, numTracks))
+
             overlapCosts = self.OverlapCost(availableTracks[trackNumber].LastData().pixels, coordinates)
             # distanceCosts = self.DistanceCost(availableTracks[trackNumber].LastData().centroid, centroids)
             # areaCosts = self.AreaCost(availableTracks[trackNumber].LastData().area, areas)
             # costMatrix[trackNumber, 0:numDetections] = distanceCosts + areaCosts + overlapCosts
             costMatrix[trackNumber, 0:numDetections] = overlapCosts
-
+        Printer.printRep(None)
         # Solve the assignment problem (Hungarian algorithm)
         trackIndices, detectionIndices = linear_sum_assignment(costMatrix)
 
@@ -156,7 +172,6 @@ class Tracker:
                 if track.invisibleConsecutive >= self.deleteTracksAfterMissing:
                     track.active = False
 
-        print("Number of currently tracked organoids: %d" + str(len(self._tracks)))
         self.frame += 1
 
     def GetTracks(self):

@@ -6,7 +6,7 @@ sys.path.append(str(Path(".").resolve()))
 
 import matplotlib.pyplot as plt
 from skimage.measure import regionprops
-from backend.ImageManager import LoadImages, LabelTracks, SaveGIF
+from backend.ImageManager import LoadImages, LabelTracks, SaveGIF, SaveImage
 from backend.Tracker import Tracker
 from scipy.optimize import linear_sum_assignment
 import numpy as np
@@ -108,15 +108,21 @@ for i in range(maxNumTracks):
     if i < len(groundTruthTracks):
         groundTruthTracks[i].id = i
 
+renumberedAutomatedImages = LabelTracks(automatedTracks, (255, 255, 255), 255, 100, (0, 255, 0), (255, 0, 0),
+                                        originalImage)
+renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 100, (0, 255, 0), (255, 0, 0),
+                                 originalImage)
 
-# renumberedAutomatedImages = LabelTracks(automatedTracks, (255, 255, 255), 255, 100, (0, 255, 0), (255, 0, 0),
-#                                         originalImage)
-# renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 100, (0, 255, 0), (255, 0, 0),
-#                                  originalImage)
-#
-# merged = [np.concatenate([a, b], axis=1) for a, b in zip(renumberedGTImages, renumberedAutomatedImages)]
-#
-# SaveGIF(merged, Path(r"figuresAndStats\renumberedTracks.gif"))
+merged = [np.concatenate([a, b], axis=1) for a, b in zip(renumberedGTImages, renumberedAutomatedImages)]
+
+SaveGIF(merged, Path(r"figuresAndStats\renumberedTracks.gif"))
+
+i = 0
+for outputImage in merged:
+    fileName = "trackResults_" + str(i) + ".png"
+    i += 1
+    savePath = Path(r"figuresAndStats\tracks") / fileName
+    SaveImage(outputImage, savePath)
 
 
 def CompareTrackData(dataA: Tracker.OrganoidFrameData, dataB: Tracker.OrganoidFrameData):
@@ -145,36 +151,70 @@ def CompareTrackData(dataA: Tracker.OrganoidFrameData, dataB: Tracker.OrganoidFr
 
 
 numFrames = len(regionPropsAll)
-numTracks = len(automatedTracks)
+numTracks = max(len(automatedTracks), len(groundTruthTracks))
 
 correctPerFrame = []
 incorrectPerFrame = []
 percentCorrect = []
+areasGT = np.full([numFrames, numTracks], np.nan)
+areasAutomated = np.full([numFrames, numTracks], np.nan)
+
 for frameNumber in range(numFrames):
     correctTracks = 0
     incorrectTracks = 0
-    for trackA, trackB in zip(automatedTracks, groundTruthTracks):
-        comparison = CompareTrackData(trackA.DataAtFrame(frameNumber), trackB.DataAtFrame(frameNumber))
+    for trackNumber, (automatedTrack, groundTruthTrack) in enumerate(zip(automatedTracks, groundTruthTracks)):
+        comparison = CompareTrackData(automatedTrack.DataAtFrame(frameNumber),
+                                      groundTruthTrack.DataAtFrame(frameNumber))
         if comparison == 1:
             correctTracks += 1
         elif comparison == -1:
             incorrectTracks += 1
+
+        if automatedTrack.DataAtFrame(frameNumber):
+            areasAutomated[frameNumber, trackNumber] = automatedTrack.DataAtFrame(frameNumber).area * 6.8644
+
+        if groundTruthTrack.DataAtFrame(frameNumber):
+            areasGT[frameNumber, trackNumber] = groundTruthTrack.DataAtFrame(frameNumber).area * 6.8644
+
     correctPerFrame.append(correctTracks)
     incorrectPerFrame.append(incorrectTracks)
     percentCorrect.append(correctTracks / (correctTracks + incorrectTracks))
 
-frames = [i*2 for i in range(numFrames)]
-plt.subplot(1, 2, 1)
+frames = [i * 2 for i in range(numFrames)]
+plt.subplot(2, 2, 1)
 plt.plot(frames, correctPerFrame)
 plt.plot(frames, incorrectPerFrame)
-plt.legend(["Correct", "Incorrect"])
+plt.plot(frames, [a + b for a, b in zip(correctPerFrame, incorrectPerFrame)])
+plt.legend(["Correct", "Incorrect", "Total"])
 plt.xlabel("Time (hours)")
 plt.ylabel("Number of Active Tracks")
 
-plt.subplot(1, 2, 2)
+plt.subplot(2, 2, 2)
 plt.plot(frames, percentCorrect)
 plt.xlabel("Time (hours)")
 plt.ylabel("Correct Tracks (Fraction of Total)")
+plt.axhline(y=min(percentCorrect), color="r", linestyle="dashed")
+plt.text(0, min(percentCorrect), "%.2f" % min(percentCorrect), verticalalignment='bottom',
+         horizontalalignment='left', color="r")
 plt.ylim([0, 1.1])
+
+idsToHighlight = [0, 1, 2, 3, 5, 6, 9, 18, 33]
+plt.subplot(2, 2, 3)
+plt.plot(frames, np.delete(areasGT, idsToHighlight, 1), 'o-', color=(0.9, 0.9, 0.9), label="_nolabel")
+plt.plot(frames, areasGT[:, idsToHighlight], 'o-', label=[str(x) for x in idsToHighlight])
+plt.legend()
+plt.title("Ground Truth Areas")
+plt.xlabel("Time (hours)")
+plt.ylabel(r"Organoid Area ($\mu m^2$)")
+
+plt.subplot(2, 2, 4)
+plt.title("Automated Areas")
+plt.plot(frames, np.delete(areasAutomated, idsToHighlight, 1), 'o-', color=(0.9, 0.9, 0.9), label="_nolabel")
+plt.plot(frames, areasAutomated[:, idsToHighlight], 'o-', label=[str(x) for x in idsToHighlight])
+plt.legend()
+plt.xlabel("Time (hours)")
+plt.ylabel(r"Organoid Area ($\mu m^2$)")
+
+print(percentCorrect)
 
 plt.show()
