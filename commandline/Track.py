@@ -19,20 +19,6 @@ class Track(Program):
         parser.add_argument("outputPath", help="Path where results will be saved.", type=pathlib.Path)
         parser.add_argument("-B", dest="brightness", default=1, help="Brightness multiplier for original image.",
                             type=float)
-        parser.add_argument("-D", dest="deleteAfter", default=-1,
-                            help="Discard a track when it has been missing for a given number of frames.",
-                            type=float)
-        parser.add_argument("-CM", dest="missingCost", default=1,
-                            help="Cost for considering an organoid as 'lost' for a frame, instead of assigning it to an"
-                                 " existing organoid track. A higher value assumes that organoids are rarely lost in "
-                                 "sequential images. A lower value allows for more forgiveness. Values are "
-                                 "in pixels, as relative to the distance an organoid might move over one frame.")
-        parser.add_argument("-CN", dest="newCost", default=1,
-                            help="Cost for considering an organoid as 'new' for a frame, instead of assigning it to an"
-                                 " existing organoid track. A higher value assumes that new organoids rarely "
-                                 "appear in sequential images (after the first image). "
-                                 "A lower value will allow for more organoid tracks over time. Values are "
-                                 "in pixels, as relative to the distance an organoid might move over one frame.")
         parser.add_argument("--individual", action="store_true",
                             help="If set, tracked images will be saved as separate frames.")
 
@@ -47,9 +33,6 @@ class Track(Program):
 
         # Load tracker
         tracker = Tracker()
-        tracker.costOfMissingOrganoid = parserArgs.missingCost
-        tracker.costOfNewOrganoid = parserArgs.newCost
-        tracker.deleteTracksAfterMissing = parserArgs.deleteAfter
 
         # Track images
         for image in labeledImages:

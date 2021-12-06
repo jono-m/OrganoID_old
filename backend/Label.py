@@ -19,7 +19,7 @@ def Label(image: np.ndarray, minimumArea: float, removeBorders: bool):
     heightmap = -smoothForeground
 
     # Basins are found by removing the organoid borders.
-    edges = Edges(image)
+    edges = DetectEdges(image)
     centers = np.bitwise_and(foregroundMask, np.bitwise_not(edges))
     basins, _ = ndimage.label(centers)
     labeled = segmentation.watershed(heightmap, basins, mask=foregroundMask)
@@ -49,10 +49,11 @@ def Label(image: np.ndarray, minimumArea: float, removeBorders: bool):
     return labeled
 
 
-def Edges(image: np.ndarray):
+def DetectEdges(image: np.ndarray):
     # Reordered Canny edge detector (Sobel -> Gaussian -> Hysteresis threshold)
     smoothEdges = skimage.filters.gaussian(skimage.filters.sobel(image), 2)
     edges = skimage.filters.apply_hysteresis_threshold(smoothEdges, 0.005, 0.05)
+    edges = np.bitwise_and(edges, np.bitwise_not(image))
     return edges
 
 

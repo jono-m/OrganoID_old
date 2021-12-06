@@ -13,6 +13,7 @@ from skimage.color import label2rgb
 from skimage.filters import sobel
 from skimage.measure import regionprops
 from backend.Tracker import Tracker
+from util import Printer
 
 
 # A SmartImage maintains knowledge about the path that an image was loaded from (and groups stacks together)
@@ -21,8 +22,15 @@ class SmartImage:
         self.path = path
         self.frames = frames
 
-    def DoOperation(self, operation: Callable[[np.ndarray], np.ndarray]):
-        return SmartImage(self.path, [operation(frame) for frame in self.frames])
+    def DoOperation(self, operation: Callable[[np.ndarray], np.ndarray], verbose=False):
+        images = []
+        for i, frame in enumerate(self.frames):
+            if verbose:
+                Printer.printRep("%d/%d" % (i+1, len(self.frames)))
+            images.append(operation(frame))
+        if verbose:
+            Printer.printRep()
+        return SmartImage(self.path, images)
 
 
 # Lazy load of images from a string or Path-like object of a directory, file, or stack.
@@ -118,12 +126,12 @@ def SaveImage(image: np.ndarray, path: Path):
 
 # Convert a numberically labeled image to a randomly-colored RGB image (with optional drawing of label number on
 # each island.
-def LabelToRGB(image: np.ndarray, drawText=True):
+def LabelToRGB(image: np.ndarray, textSize):
     # Scikit-image RGB is 0-1. Convert to 8-bit RGB.
     labeled = (label2rgb(image, bg_label=0) * 255).astype(np.uint8)
 
-    if drawText:
-        font = ImageFont.truetype("arial.ttf", 16)
+    if textSize:
+        font = ImageFont.truetype("arial.ttf", textSize)
         regionProperties = regionprops(image)
 
         withTextImage = Image.fromarray(labeled)

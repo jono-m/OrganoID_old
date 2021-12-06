@@ -32,25 +32,31 @@ def confusionMatrix(true: np.ndarray, predicted: np.ndarray):
     return np.asarray([[TP, FP], [FN, TN]])
 
 
-imagesPath = Path(r"dataset\testing\images\PDAC*")
-segmentationsPath = Path(r"dataset\testing\segmentations\PDAC*")
+datasets = ["PDAC", "ACC", "C", "Lung"]
+
 modelPath = Path(r"model\model.tflite")
-
-images = LoadImages(imagesPath, (512, 512), mode="L")
-segmentations = LoadImages(segmentationsPath, (512, 512), mode="1")
-
 detector = Detector(modelPath)
 
-confusionMatrices = []
-for (image, segmentation) in zip(images, segmentations):
-    print("Analyzing image %s " % image.path.name)
-    detectedFrames = [detector.Detect(frame) >= 0.5 for frame in image.frames]
-    cmats = [confusionMatrix(segmentationFrame, predictedFrame) for
-             segmentationFrame, predictedFrame in zip(segmentation.frames, detectedFrames)]
-    confusionMatrices += cmats
+meanIOUs = []
+stdIOUs = []
 
-ious = [IOU(list(cmat.flatten())) for cmat in confusionMatrices]
+for dataset in datasets:
+    imagesPath = Path(r"dataset\testing\images\%s*" % dataset)
+    segmentationsPath = Path(r"dataset\testing\segmentations\%s*" % dataset)
+    images = LoadImages(imagesPath, (512, 512), mode="L")
+    segmentations = LoadImages(segmentationsPath, (512, 512), mode="1")
+    confusionMatrices = []
+    for (image, segmentation) in zip(images, segmentations):
+        print("Analyzing image %s " % image.path.name)
+        detectedFrames = [detector.Detect(frame) >= 0.5 for frame in image.frames]
+        cmats = [confusionMatrix(segmentationFrame, predictedFrame) for
+                 segmentationFrame, predictedFrame in zip(segmentation.frames, detectedFrames)]
+        confusionMatrices += cmats
 
-mean = np.mean(ious)
-std = np.std(ious)
-print("Mean IOU: %.4f (STD=%.4f)" % (mean, std))
+    ious = [IOU(list(cmat.flatten())) for cmat in confusionMatrices]
+
+    meanIOUs.append(np.mean(ious))
+    stdIOUs.append(np.std(ious))
+
+for dataset, mean, std in zip(datasets, meanIOUs, stdIOUs):
+    print("%s mean IOU: %.4f (STD=%.4f)" % (dataset, mean, std))

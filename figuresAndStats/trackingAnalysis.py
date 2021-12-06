@@ -115,7 +115,7 @@ renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 100, (
 
 merged = [np.concatenate([a, b], axis=1) for a, b in zip(renumberedGTImages, renumberedAutomatedImages)]
 
-SaveGIF(merged, Path(r"figuresAndStats\renumberedTracks.gif"))
+SaveGIF(merged, Path(r"figuresAndStats\tracking\renumberedTracks.gif"))
 
 i = 0
 for outputImage in merged:

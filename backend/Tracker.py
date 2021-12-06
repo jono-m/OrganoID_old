@@ -4,19 +4,7 @@ from typing import List
 import numpy as np
 from skimage.measure import regionprops
 from scipy.optimize import linear_sum_assignment
-
-
-class Printer:
-    _lastPrint = ""
-
-    @staticmethod
-    def printRep(text=None):
-        if text is None:
-            print("")
-            Printer._lastPrint = ""
-        else:
-            print("\b" * len(Printer._lastPrint) + text, end='\r')
-            Printer._lastPrint = text
+from util import Printer
 
 
 class Tracker:
@@ -84,12 +72,10 @@ class Tracker:
 
     def __init__(self):
         self._tracks: List[Tracker.OrganoidTrack] = []
-        self.distanceCost = 0
-        self.overlapCost = 1
-        self.areaCost = 0
-        self.costOfNewOrganoid = 100
-        self.costOfMissingOrganoid = 20
-        self.deleteTracksAfterMissing = 10
+        self.overlapCost = 100
+        self.costOfNewOrganoid = 1
+        self.costOfMissingOrganoid = 1
+        self.deleteTracksAfterMissing = -1
         self.frame = 0
 
     def Track(self, image: np.ndarray):
@@ -128,9 +114,6 @@ class Tracker:
             Printer.printRep("(Track %d/%d)" % (trackNumber, numTracks))
 
             overlapCosts = self.OverlapCost(availableTracks[trackNumber].LastData().pixels, coordinates)
-            # distanceCosts = self.DistanceCost(availableTracks[trackNumber].LastData().centroid, centroids)
-            # areaCosts = self.AreaCost(availableTracks[trackNumber].LastData().area, areas)
-            # costMatrix[trackNumber, 0:numDetections] = distanceCosts + areaCosts + overlapCosts
             costMatrix[trackNumber, 0:numDetections] = overlapCosts
         Printer.printRep(None)
         # Solve the assignment problem (Hungarian algorithm)
@@ -184,13 +167,6 @@ class Tracker:
             if overlap == 0:
                 overlap = np.inf
             else:
-                overlap = 100 / overlap
+                overlap = 1 / overlap
             overlaps.append(overlap * self.overlapCost)
         return np.asarray(overlaps)
-
-    def DistanceCost(self, centroidA, bCentroids):
-        distances = np.sqrt(np.sum(np.square(bCentroids - centroidA), axis=1))
-        return distances * self.distanceCost
-
-    def AreaCost(self, areaA, bAreas):
-        return abs(np.sqrt(areaA) - np.sqrt(bAreas)) * self.areaCost

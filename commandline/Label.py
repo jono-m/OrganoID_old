@@ -18,14 +18,19 @@ class Label(Program):
         parser.add_argument("-A", dest="minArea", default=100,
                             type=int,
                             help="Remove organoids with an area smaller than a set number of pixels.")
+        parser.add_argument("-T", dest="textSize", default=12,
+                            type=int,
+                            help="Draw text on RGB image with given font size.")
         parser.add_argument("--removeBorder", action="store_true", help="Remove organoids that are touching borders.")
         parser.add_argument("--rgb", action="store_true",
                             help="If set, an RGB version of each image will also be produced.")
+        parser.add_argument("--edge", action="store_true",
+                            help="If set, a version of each image with edge detection will also be produced.")
         parser.add_argument("--show", action="store_true", help="If set, the output images will be displayed.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.ImageManager import LoadImages, SaveImage, ShowImage, LabelToRGB, SaveTIFFStack
-        from backend.Label import Label
+        from backend.Label import Label, DetectEdges
 
         # Load detection images
         images = LoadImages(parserArgs.detectionsPath, size=[512, 512])
@@ -35,11 +40,14 @@ class Label(Program):
             print("Labeling %d: %s" % (count, image.path))
             count += 1
 
-            identified = image.DoOperation(lambda x: Label(x, parserArgs.minArea, parserArgs.removeBorder))
+            edges = image.DoOperation(DetectEdges)
+            identified = image.DoOperation(lambda x: Label(x, parserArgs.minArea, parserArgs.removeBorder), True)
 
             outputImages = []
             if parserArgs.rgb:
-                outputImages.append(("rgb", identified.DoOperation(LabelToRGB)))
+                outputImages.append(("rgb", identified.DoOperation(lambda x: LabelToRGB(x, parserArgs.textSize), True)))
+            if parserArgs.edge:
+                outputImages.append(("edges", edges))
             outputImages.append(("labeled", identified))
 
             if parserArgs.show:
