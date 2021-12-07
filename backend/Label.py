@@ -53,7 +53,9 @@ def DetectEdges(image: np.ndarray):
     # Reordered Canny edge detector (Sobel -> Gaussian -> Hysteresis threshold)
     smoothEdges = skimage.filters.gaussian(skimage.filters.sobel(image), 2)
     edges = skimage.filters.apply_hysteresis_threshold(smoothEdges, 0.005, 0.05)
-    edges = np.bitwise_and(edges, np.bitwise_not(image))
+
+    foregroundMask = ndimage.binary_opening(image >= 0.5)
+    edges = np.bitwise_and(edges, foregroundMask)
     return edges
 
 

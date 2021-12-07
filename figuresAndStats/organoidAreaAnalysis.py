@@ -72,7 +72,7 @@ for (image, segmentation) in zip(images, segmentations):
              pair[0] < pairCount and pair[1] < pairCount]
     labelPairs = [(organoIDOrganoids[predictedIndex].label, manualOrganoids[manualIndex].label)
                   for (predictedIndex, manualIndex) in pairs]
-    areaPairs = [(organoIDOrganoids[predictedIndex].area, manualOrganoids[manualIndex].area)
+    areaPairs = [(organoIDOrganoids[predictedIndex].area * 6.8644, manualOrganoids[manualIndex].area * 6.8644)
                  for (predictedIndex, manualIndex) in pairs]
 
     organoidAreas += areaPairs

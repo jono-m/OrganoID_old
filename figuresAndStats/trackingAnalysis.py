@@ -108,6 +108,7 @@ for i in range(maxNumTracks):
     if i < len(groundTruthTracks):
         groundTruthTracks[i].id = i
 
+
 renumberedAutomatedImages = LabelTracks(automatedTracks, (255, 255, 255), 255, 100, (0, 255, 0), (255, 0, 0),
                                         originalImage)
 renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 100, (0, 255, 0), (255, 0, 0),
@@ -201,7 +202,7 @@ plt.ylim([0, 1.1])
 idsToHighlight = [0, 1, 2, 3, 5, 6, 9, 18, 33]
 plt.subplot(2, 2, 3)
 plt.plot(frames, np.delete(areasGT, idsToHighlight, 1), 'o-', color=(0.9, 0.9, 0.9), label="_nolabel")
-plt.plot(frames, areasGT[:, idsToHighlight], 'o-', label=[str(x) for x in idsToHighlight])
+[plt.plot(frames, areasGT[:, idToHighlight], 'o-', label=str(idToHighlight)) for idToHighlight in idsToHighlight]
 plt.legend()
 plt.title("Ground Truth Areas")
 plt.xlabel("Time (hours)")
@@ -210,7 +211,7 @@ plt.ylabel(r"Organoid Area ($\mu m^2$)")
 plt.subplot(2, 2, 4)
 plt.title("Automated Areas")
 plt.plot(frames, np.delete(areasAutomated, idsToHighlight, 1), 'o-', color=(0.9, 0.9, 0.9), label="_nolabel")
-plt.plot(frames, areasAutomated[:, idsToHighlight], 'o-', label=[str(x) for x in idsToHighlight])
+[plt.plot(frames, areasAutomated[:, idToHighlight], 'o-', label=str(idToHighlight)) for idToHighlight in idsToHighlight]
 plt.legend()
 plt.xlabel("Time (hours)")
 plt.ylabel(r"Organoid Area ($\mu m^2$)")
