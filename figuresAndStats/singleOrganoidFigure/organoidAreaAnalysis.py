@@ -2,22 +2,31 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(".").resolve()))
-from figuresAndStats.stats import pearsonr_ci, linr_ci
 from backend.Detector import Detector
 from backend.ImageManager import LoadImages, LabelToRGB, ShowImage
 from backend.Label import Label
 from scipy.optimize import linear_sum_assignment
 import numpy as np
-import matplotlib.pyplot as plt
 from skimage.measure import regionprops
 from skimage.morphology import remove_small_objects
 import scipy.ndimage as ndimage
-
-plt.rcParams['svg.fonttype'] = 'none'
+from util import Printer
 
 # Set this to TRUE to display the matched organoids between OrganoID- and manual-labeled
 # images.
 displayComparison = False
+
+
+def OverlapCost(coordinatesA, bCoordinates):
+    overlaps = []
+    for coordinatesB in bCoordinates:
+        overlap = np.count_nonzero((coordinatesA[:, None] == coordinatesB).all(-1).any(-1))
+        if overlap == 0:
+            overlap = 10000
+        else:
+            overlap = 1 / overlap
+        overlaps.append(overlap)
+    return np.asarray(overlaps)
 
 
 def Relabel(a: np.ndarray, b: np.ndarray, labelPairs):
@@ -41,6 +50,9 @@ segmentations = LoadImages(segmentationsPath, [512, 512], mode="1")
 
 organoidAreas = []
 
+file = open(r"figuresAndStats\singleOrganoidFigure\data\matched_areas.csv", "w+")
+file.write("Image, Manual label, Manual area, OrganoID label, OrganoID area\n")
+
 for (image, segmentation) in zip(images, segmentations):
     print("Analyzing image %s " % image.path.name)
     detected = detector.Detect(image.frames[0])
@@ -53,18 +65,21 @@ for (image, segmentation) in zip(images, segmentations):
     manualOrganoids = regionprops(manual_labeled)
 
     # Now we match organoids in the manual and OrganoID labeled images by POSITION only
-    # (to compare area). Use Hungarian assignment algorithm with cost matrix of centroid
-    # distance.
+    # (to compare area). Use Hungarian assignment algorithm with cost matrix of overlap amount.
     numPredicted = len(organoIDOrganoids)
     numActual = len(manualOrganoids)
     fullSize = max(numPredicted, numActual)
     costMatrix = np.zeros([fullSize, fullSize])
-    for predictedIndex, predictedOrganoid in enumerate(organoIDOrganoids):
-        for manualIndex, manualOrganoid in enumerate(manualOrganoids):
-            distance = np.sqrt((predictedOrganoid.centroid[0] - manualOrganoid.centroid[0]) ** 2 +
-                               (predictedOrganoid.centroid[1] - manualOrganoid.centroid[1]) ** 2)
-            costMatrix[predictedIndex, manualIndex] = distance
+    coordinatesOID = [oid.coords for oid in organoIDOrganoids]
+    coordinatesManual = [manual.coords for manual in manualOrganoids]
+
+    n = len(coordinatesOID)
+    for i, oidCoord in enumerate(coordinatesOID):
+        Printer.printRep("%d/%d" % (i + 1, n))
+        costs = OverlapCost(oidCoord, coordinatesManual) * 100
+        costMatrix[i, 0:len(coordinatesManual)] = costs
     predictedIndices, manualIndices = linear_sum_assignment(costMatrix)
+    Printer.printRep()
 
     # Gather areas for the position-matched organoids
     pairCount = min(numPredicted, numActual)
@@ -72,9 +87,13 @@ for (image, segmentation) in zip(images, segmentations):
              pair[0] < pairCount and pair[1] < pairCount]
     labelPairs = [(organoIDOrganoids[predictedIndex].label, manualOrganoids[manualIndex].label)
                   for (predictedIndex, manualIndex) in pairs]
-    areaPairs = [(organoIDOrganoids[predictedIndex].area * 6.8644, manualOrganoids[manualIndex].area * 6.8644)
-                 for (predictedIndex, manualIndex) in pairs]
+    areaPairs = [
+        (organoIDOrganoids[predictedIndex].area * 6.8644, manualOrganoids[manualIndex].area * 6.8644)
+        for (predictedIndex, manualIndex) in pairs]
 
+    [file.write("%s, %d, %f, %d, %f\n" % (image.path.name, labels[0], areas[0], labels[1], areas[1])) for labels, areas
+     in
+     zip(labelPairs, areaPairs)]
     organoidAreas += areaPairs
 
     if displayComparison:
@@ -89,40 +108,4 @@ for (image, segmentation) in zip(images, segmentations):
         ShowImage(merged)
         input()
 
-areas = np.asarray(organoidAreas)
-organoID_areas = areas[:, 0]
-manual_areas = areas[:, 1]
-
-ccc, loc, hic = linr_ci(organoID_areas, manual_areas)
-
-r, p, lo, hi = pearsonr_ci(organoID_areas, manual_areas)
-
-maxArea = np.max(np.concatenate([organoID_areas, manual_areas]))
-plt.subplot(1, 2, 1)
-plt.plot(manual_areas, organoID_areas, 'o')
-plt.title("Organoid area comparison\n($CCC=%.2f$ [95%% CI %.2f-%.2f], $r=%.2f$ [95%% CI %.2f-%.2f]" % (
-    ccc, loc, hic, r, lo, hi))
-plt.ylabel("Organoid area (Method: OrganoID)")
-plt.xlabel("Organoid area (Method: Manual)")
-plt.plot([0, maxArea], [0, maxArea], "-")
-
-plt.subplot(1, 2, 2)
-means = [(x + y) / 2 for (x, y) in zip(organoID_areas, manual_areas)]
-differences = [(x - y) for (x, y) in zip(organoID_areas, manual_areas)]
-plt.plot(means, differences, 'o')
-
-mean = np.mean(differences)
-std = np.std(differences)
-labels = [(mean, "Mean=%.2f" % mean, "b"),
-          (mean - std * 1.96, "-1.96\u03C3=%.2f" % (mean - std * 1.96), "r"),
-          (mean + std * 1.96, "+1.96\u03C3=%.2f" % (mean + std * 1.96), "r")]
-plt.axhline(y=mean, color="b", linestyle="solid")
-plt.axhline(y=mean + std * 1.96, color="r", linestyle="dashed")
-plt.axhline(y=mean - std * 1.96, color="r", linestyle="dashed")
-plt.xlabel(r"Average of OrganoID and manual area ($\mu m^2$)")
-plt.ylabel("Difference between OrganoID and manual area")
-plt.title("Bland-Altman plot of OrganoID and manual organoid area")
-plt.ylim([min(differences) - 2, -min(differences) + 2])
-for (y, text, color) in labels:
-    plt.text(np.max(means), y, text, verticalalignment='bottom', horizontalalignment='right', color=color)
-plt.show()
+file.close()

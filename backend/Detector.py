@@ -6,6 +6,7 @@ except ImportError as e:
     Interpreter = tf.lite.Interpreter
 from pathlib import Path
 import numpy as np
+import matplotlib.pyplot as plt
 import typing
 
 
@@ -36,3 +37,7 @@ class Detector:
         self._interpreter.invoke()
         output = self._interpreter.get_tensor(self._output_index)
         return output[:, :, :, 0]
+
+    def DetectHeatmap(self, image: np.ndarray) -> np.ndarray:
+        detected = self.Detect(image)
+        return (plt.get_cmap("hot")(detected)[:, :, :3] * 255).astype(np.uint8)

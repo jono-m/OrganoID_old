@@ -116,13 +116,13 @@ renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 100, (
 
 merged = [np.concatenate([a, b], axis=1) for a, b in zip(renumberedGTImages, renumberedAutomatedImages)]
 
-SaveGIF(merged, Path(r"figuresAndStats\tracking\renumberedTracks.gif"))
+SaveGIF(merged, Path(r"figuresAndStats\trackingFigure\images\renumberedTracks.gif"))
 
 i = 0
 for outputImage in merged:
     fileName = "trackResults_" + str(i) + ".png"
     i += 1
-    savePath = Path(r"figuresAndStats\tracks") / fileName
+    savePath = Path(r"figuresAndStats\trackingFigure\images") / fileName
     SaveImage(outputImage, savePath)
 
 
@@ -172,10 +172,10 @@ for frameNumber in range(numFrames):
             incorrectTracks += 1
 
         if automatedTrack.DataAtFrame(frameNumber):
-            areasAutomated[frameNumber, trackNumber] = automatedTrack.DataAtFrame(frameNumber).area * 6.8644
+            areasAutomated[frameNumber, trackNumber] = automatedTrack.DataAtFrame(frameNumber).area * 6.8644 / 1000
 
         if groundTruthTrack.DataAtFrame(frameNumber):
-            areasGT[frameNumber, trackNumber] = groundTruthTrack.DataAtFrame(frameNumber).area * 6.8644
+            areasGT[frameNumber, trackNumber] = groundTruthTrack.DataAtFrame(frameNumber).area * 6.8644 / 1000
 
     correctPerFrame.append(correctTracks)
     incorrectPerFrame.append(incorrectTracks)
@@ -206,7 +206,7 @@ plt.plot(frames, np.delete(areasGT, idsToHighlight, 1), 'o-', color=(0.9, 0.9, 0
 plt.legend()
 plt.title("Ground Truth Areas")
 plt.xlabel("Time (hours)")
-plt.ylabel(r"Organoid Area ($\mu m^2$)")
+plt.ylabel(r"Organoid Area (x $10^3 \mu m^2$)")
 
 plt.subplot(2, 2, 4)
 plt.title("Automated Areas")
@@ -214,7 +214,7 @@ plt.plot(frames, np.delete(areasAutomated, idsToHighlight, 1), 'o-', color=(0.9,
 [plt.plot(frames, areasAutomated[:, idToHighlight], 'o-', label=str(idToHighlight)) for idToHighlight in idsToHighlight]
 plt.legend()
 plt.xlabel("Time (hours)")
-plt.ylabel(r"Organoid Area ($\mu m^2$)")
+plt.ylabel(r"Organoid Area (x $10^3 \mu m^2$)")
 
 print(percentCorrect)
 
