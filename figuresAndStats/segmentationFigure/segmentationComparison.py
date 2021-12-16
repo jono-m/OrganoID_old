@@ -25,13 +25,13 @@ for name, image, groundTruth in zip(exampleImages, images, groundTruthImages):
     detectedColored = np.zeros([512, 512, 3], dtype=np.uint8)
     merged = np.zeros([512, 512, 3], dtype=np.uint8)
 
-    groundTruthColored[np.where(groundTruth)] = [41, 171, 226]
-    merged[np.where(groundTruth)] = [41, 171, 226]
+    groundTruthColored[np.where(groundTruth)] = [174, 205, 236]
+    merged[np.where(groundTruth)] = [174, 205, 236]
 
-    detectedColored[np.where(detected > 0.5)] = [255, 123, 172]
-    merged[np.where(detected > 0.5)] = [255, 123, 172]
+    detectedColored[np.where(detected > 0.5)] = [243, 213, 123]
+    merged[np.where(detected > 0.5)] = [243, 213, 123]
 
-    merged[np.where(np.bitwise_and(detected >= 0.5, groundTruth))] = [139, 100, 173]
+    merged[np.where(np.bitwise_and(detected >= 0.5, groundTruth))] = [112, 200, 120]
 
     SaveImage(merged, outPath / (name + "_merged.png"))
     SaveImage(detectedColored, outPath / (name + "_detected.png"))

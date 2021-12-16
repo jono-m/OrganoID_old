@@ -128,7 +128,15 @@ def SaveImage(image: np.ndarray, path: Path):
 # each island.
 def LabelToRGB(image: np.ndarray, textSize):
     # Scikit-image RGB is 0-1. Convert to 8-bit RGB.
-    labeled = (label2rgb(image, bg_label=0) * 255).astype(np.uint8)
+    colors = [(255, 31, 91),
+              (255, 198, 30),
+              (175, 88, 186),
+              # (0, 205, 108),
+              (0, 154, 222)]
+              # (160, 177, 186),
+              # (166, 118, 29)]
+    colors = [(r/255, g/255, b/255) for (r, g, b) in colors]
+    labeled = (label2rgb(image, bg_label=0, colors=colors) * 255).astype(np.uint8)
 
     if textSize:
         font = ImageFont.truetype("arial.ttf", textSize)

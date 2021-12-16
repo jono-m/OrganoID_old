@@ -6,7 +6,8 @@ except ImportError as e:
     Interpreter = tf.lite.Interpreter
 from pathlib import Path
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import colorsys
 import typing
 
 
@@ -40,4 +41,12 @@ class Detector:
 
     def DetectHeatmap(self, image: np.ndarray) -> np.ndarray:
         detected = self.Detect(image)
-        return (plt.get_cmap("hot")(detected)[:, :, :3] * 255).astype(np.uint8)
+        minimum = detected.min()
+        maximum = detected.max()
+        hue = 343/360
+        h = np.ones_like(detected) * hue
+        s = np.minimum(1, 2 - 2*(detected - minimum)/(maximum-minimum))
+        v = np.minimum(1, 2*(detected - minimum)/(maximum-minimum))
+        concat = np.stack([h, s, v], -1)
+        converted = colors.hsv_to_rgb(concat)
+        return (converted * 255).astype(np.uint8)

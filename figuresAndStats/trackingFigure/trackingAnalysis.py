@@ -108,19 +108,18 @@ for i in range(maxNumTracks):
     if i < len(groundTruthTracks):
         groundTruthTracks[i].id = i
 
-
-renumberedAutomatedImages = LabelTracks(automatedTracks, (255, 255, 255), 255, 100, (0, 255, 0), (255, 0, 0),
+renumberedAutomatedImages = LabelTracks(automatedTracks, (255, 255, 255), 255, 100, (0, 205, 108), (255, 31, 91),
                                         originalImage)
-renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 100, (0, 255, 0), (255, 0, 0),
+renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 100, (0, 205, 108), (255, 31, 91),
                                  originalImage)
 
 merged = [np.concatenate([a, b], axis=1) for a, b in zip(renumberedGTImages, renumberedAutomatedImages)]
 
-SaveGIF(merged, Path(r"figuresAndStats\trackingFigure\images\renumberedTracks.gif"))
+SaveGIF(merged, Path(r"figuresAndStats\trackingFigure\images\results.gif"))
 
 i = 0
-for outputImage in merged:
-    fileName = "trackResults_" + str(i) + ".png"
+for outputImage in renumberedAutomatedImages:
+    fileName = "renumbered_" + str(i) + ".png"
     i += 1
     savePath = Path(r"figuresAndStats\trackingFigure\images") / fileName
     SaveImage(outputImage, savePath)
@@ -215,7 +214,5 @@ plt.plot(frames, np.delete(areasAutomated, idsToHighlight, 1), 'o-', color=(0.9,
 plt.legend()
 plt.xlabel("Time (hours)")
 plt.ylabel(r"Organoid Area (x $10^3 \mu m^2$)")
-
-print(percentCorrect)
 
 plt.show()

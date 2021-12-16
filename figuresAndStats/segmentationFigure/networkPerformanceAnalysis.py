@@ -33,12 +33,12 @@ def confusionMatrix(true: np.ndarray, predicted: np.ndarray):
 
 
 datasets = ["PDAC", "ACC", "C", "Lung"]
+names = ["PDAC", "ACC", "Colon", "Lung"]
 
 modelPath = Path(r"model\model.tflite")
 detector = Detector(modelPath)
 
-meanIOUs = []
-stdIOUs = []
+ious = []
 
 for dataset in datasets:
     imagesPath = Path(r"dataset\testing\images\%s*" % dataset)
@@ -53,10 +53,9 @@ for dataset in datasets:
                  segmentationFrame, predictedFrame in zip(segmentation.frames, detectedFrames)]
         confusionMatrices += cmats
 
-    ious = [IOU(list(cmat.flatten())) for cmat in confusionMatrices]
+    ious.append([IOU(list(cmat.flatten())) for cmat in confusionMatrices])
 
-    meanIOUs.append(np.mean(ious))
-    stdIOUs.append(np.std(ious))
-
-for dataset, mean, std in zip(datasets, meanIOUs, stdIOUs):
-    print("%s mean IOU: %.4f (STD=%.4f)" % (dataset, mean, std))
+dataFile = open(r"figuresAndStats\segmentationFigure\data\ious.csv", "w+")
+for name, iou in zip(names, ious):
+    dataFile.write(name + ", " + ", ".join([str(x) for x in iou]) + "\n")
+dataFile.close()
