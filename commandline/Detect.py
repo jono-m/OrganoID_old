@@ -47,7 +47,7 @@ class Detect(Program):
                 # Color pixels with a heatmap.
                 outputImages.append(
                     ("heat",
-                     detected_raw.DoOperation(lambda x: (plt.get_cmap("hot")(x)[:, :, :3] * 255).astype(np.uint8)),
+                     detected_raw.DoOperation(lambda x: detector.ConvertToHeatmap(x)),
                      None))
             outputImages.append(("detected", detected_raw, ".tiff"))
 

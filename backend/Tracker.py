@@ -40,6 +40,12 @@ class Tracker:
             self.invisibleConsecutive = 0
             self.data: List[Tracker.OrganoidFrameData] = []
 
+        def LastDetectionFrame(self):
+            for frameNumber, data in reversed(list(enumerate(self.data))):
+                if data.wasDetected:
+                    return frameNumber + self.firstFrame
+            return self.firstFrame
+
         def DataAtFrame(self, frame):
             # Retrieve the datapoint for the given frame
             if frame < self.firstFrame:

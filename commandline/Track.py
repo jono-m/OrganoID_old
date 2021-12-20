@@ -44,7 +44,7 @@ class Track(Program):
         # Load original images
         originalImages = LoadImages(parserArgs.originalImagesPath, size=[512, 512], mode='L')
         originalFrames = [frame * parserArgs.brightness for baseImage in originalImages for frame in baseImage.frames]
-        outputImages = LabelTracks(tracker.GetTracks(), (255, 255, 255, 255), 255, 50, (0, 205, 108), (255, 0, 0),
+        outputImages = LabelTracks(tracker.GetTracks(), (255, 255, 255, 255), 255, 50, (0, 205, 108), {},
                                    originalFrames)
 
         # Export GIF

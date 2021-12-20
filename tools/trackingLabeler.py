@@ -182,7 +182,7 @@ class MainWindow(QMainWindow):
 
     def UpdateTrackedImages(self):
         tracksByID = self.BuildTracks()
-        self.trackedImages = LabelTracks(tracksByID, (255, 255, 255, 255), 255, 50, (0, 205, 108), (255, 31, 91),
+        self.trackedImages = LabelTracks(tracksByID, (255, 255, 255, 255), 255, 50, (0, 205, 108), {},
                                          self.originalImage.frames)
 
     def UpdateLabels(self):

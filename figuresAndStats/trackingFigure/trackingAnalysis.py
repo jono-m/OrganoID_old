@@ -11,8 +11,6 @@ from backend.Tracker import Tracker
 from scipy.optimize import linear_sum_assignment
 import numpy as np
 
-plt.rcParams['svg.fonttype'] = 'none'
-
 
 def ParseMap(filename: str):
     labelMap = []
@@ -108,9 +106,14 @@ for i in range(maxNumTracks):
     if i < len(groundTruthTracks):
         groundTruthTracks[i].id = i
 
-renumberedAutomatedImages = LabelTracks(automatedTracks, (255, 255, 255), 255, 100, (0, 205, 108), (255, 31, 91),
+color = (255, 255, 255)
+idsToHighlight = {0: (0, 154, 222),
+                  1: (255, 198, 30),
+                  9: (175, 88, 186),
+                  33: (255, 31, 91)}
+renumberedAutomatedImages = LabelTracks(automatedTracks, (255, 255, 255), 255, 50, color, idsToHighlight,
                                         originalImage)
-renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 100, (0, 205, 108), (255, 31, 91),
+renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 50, color, idsToHighlight,
                                  originalImage)
 
 merged = [np.concatenate([a, b], axis=1) for a, b in zip(renumberedGTImages, renumberedAutomatedImages)]
@@ -170,49 +173,17 @@ for frameNumber in range(numFrames):
         elif comparison == -1:
             incorrectTracks += 1
 
-        if automatedTrack.DataAtFrame(frameNumber):
+        if automatedTrack.DataAtFrame(frameNumber) and automatedTrack.LastDetectionFrame() > frameNumber:
             areasAutomated[frameNumber, trackNumber] = automatedTrack.DataAtFrame(frameNumber).area * 6.8644 / 1000
 
-        if groundTruthTrack.DataAtFrame(frameNumber):
+        if groundTruthTrack.DataAtFrame(frameNumber) and groundTruthTrack.LastDetectionFrame() > frameNumber:
             areasGT[frameNumber, trackNumber] = groundTruthTrack.DataAtFrame(frameNumber).area * 6.8644 / 1000
 
     correctPerFrame.append(correctTracks)
     incorrectPerFrame.append(incorrectTracks)
     percentCorrect.append(correctTracks / (correctTracks + incorrectTracks))
 
-frames = [i * 2 for i in range(numFrames)]
-plt.subplot(2, 2, 1)
-plt.plot(frames, correctPerFrame)
-plt.plot(frames, incorrectPerFrame)
-plt.plot(frames, [a + b for a, b in zip(correctPerFrame, incorrectPerFrame)])
-plt.legend(["Correct", "Incorrect", "Total"])
-plt.xlabel("Time (hours)")
-plt.ylabel("Number of Active Tracks")
-
-plt.subplot(2, 2, 2)
-plt.plot(frames, percentCorrect)
-plt.xlabel("Time (hours)")
-plt.ylabel("Correct Tracks (Fraction of Total)")
-plt.axhline(y=min(percentCorrect), color="r", linestyle="dashed")
-plt.text(0, min(percentCorrect), "%.2f" % min(percentCorrect), verticalalignment='bottom',
-         horizontalalignment='left', color="r")
-plt.ylim([0, 1.1])
-
-idsToHighlight = [0, 1, 2, 3, 5, 6, 9, 18, 33]
-plt.subplot(2, 2, 3)
-plt.plot(frames, np.delete(areasGT, idsToHighlight, 1), 'o-', color=(0.9, 0.9, 0.9), label="_nolabel")
-[plt.plot(frames, areasGT[:, idToHighlight], 'o-', label=str(idToHighlight)) for idToHighlight in idsToHighlight]
-plt.legend()
-plt.title("Ground Truth Areas")
-plt.xlabel("Time (hours)")
-plt.ylabel(r"Organoid Area (x $10^3 \mu m^2$)")
-
-plt.subplot(2, 2, 4)
-plt.title("Automated Areas")
-plt.plot(frames, np.delete(areasAutomated, idsToHighlight, 1), 'o-', color=(0.9, 0.9, 0.9), label="_nolabel")
-[plt.plot(frames, areasAutomated[:, idToHighlight], 'o-', label=str(idToHighlight)) for idToHighlight in idsToHighlight]
-plt.legend()
-plt.xlabel("Time (hours)")
-plt.ylabel(r"Organoid Area (x $10^3 \mu m^2$)")
-
-plt.show()
+performance = np.stack([np.asarray(x) for x in [correctPerFrame, incorrectPerFrame, percentCorrect]])
+np.savetxt(r"figuresAndStats\trackingFigure\data\performance.dat", performance)
+np.savetxt(r"figuresAndStats\trackingFigure\data\areasGT.dat", areasGT)
+np.savetxt(r"figuresAndStats\trackingFigure\data\areasAutomated.dat", areasAutomated)

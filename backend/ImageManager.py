@@ -26,7 +26,7 @@ class SmartImage:
         images = []
         for i, frame in enumerate(self.frames):
             if verbose:
-                Printer.printRep("%d/%d" % (i+1, len(self.frames)))
+                Printer.printRep("%d/%d" % (i + 1, len(self.frames)))
             images.append(operation(frame))
         if verbose:
             Printer.printRep()
@@ -133,9 +133,9 @@ def LabelToRGB(image: np.ndarray, textSize):
               (175, 88, 186),
               # (0, 205, 108),
               (0, 154, 222)]
-              # (160, 177, 186),
-              # (166, 118, 29)]
-    colors = [(r/255, g/255, b/255) for (r, g, b) in colors]
+    # (160, 177, 186),
+    # (166, 118, 29)]
+    colors = [(r / 255, g / 255, b / 255) for (r, g, b) in colors]
     labeled = (label2rgb(image, bg_label=0, colors=colors) * 255).astype(np.uint8)
 
     if textSize:
@@ -152,7 +152,7 @@ def LabelToRGB(image: np.ndarray, textSize):
 
 
 # Overlay a set of organoid tracks on a list of base images.
-def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, fillAlpha, presentColor, missingColor,
+def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, fillAlpha, mainColor, specialColorMap,
                 baseImages):
     images = []
 
@@ -171,7 +171,10 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
             fillCoords = list(zip(list(data.pixels[:, 1]), list(data.pixels[:, 0])))
 
             if data.wasDetected:
-                color = presentColor
+                if track.id in specialColorMap:
+                    color = specialColorMap[track.id]
+                else:
+                    color = mainColor
             else:
                 continue
 

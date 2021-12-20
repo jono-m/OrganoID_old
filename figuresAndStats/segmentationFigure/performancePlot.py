@@ -35,5 +35,4 @@ for i, iou in enumerate(ious):
     plt.scatter([i + 1 for _ in iou], iou, marker='o', color='k', s=10, zorder=3)
 plt.xticks([1, 2, 3, 4], names)
 plt.ylabel("Intersection-over-union")
-plt.ylim([0, 1])
 plt.show()

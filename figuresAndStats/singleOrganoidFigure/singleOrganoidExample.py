@@ -59,9 +59,10 @@ for rp in rps:
     (y, x) = rp.centroid
     drawer.text((x, y), str(remap[rp.label]), anchor="mm", fill=(255, 255, 255, 255), font=font)
     print("%d\t%f\t%f" % (
-    remap[rp.label], rp.area * squareMicronsPerPixel / 1000, circularity(rp.perimeter_crofton, rp.area)))
+        remap[rp.label], rp.area * squareMicronsPerPixel / 1000, circularity(rp.perimeter_crofton, rp.area)))
 
-SaveImage(detector.DetectHeatmap(image), Path(r"figuresAndStats\singleOrganoidFigure\images\detected.png"))
+SaveImage(detector.ConvertToHeatmap(detector.Detect(image)),
+          Path(r"figuresAndStats\singleOrganoidFigure\images\detected.png"))
 SaveImage(edges, Path(r"figuresAndStats\singleOrganoidFigure\images\edges.png"))
 SaveImage(LabelToRGB(labeled, 0), Path(r"figuresAndStats\singleOrganoidFigure\images\labeled.png"))
 SaveImage(np.asarray(merged), Path(r"figuresAndStats\singleOrganoidFigure\images\overlay.png"))

@@ -39,14 +39,13 @@ class Detector:
         output = self._interpreter.get_tensor(self._output_index)
         return output[:, :, :, 0]
 
-    def DetectHeatmap(self, image: np.ndarray) -> np.ndarray:
-        detected = self.Detect(image)
+    def ConvertToHeatmap(self, detected: np.ndarray) -> np.ndarray:
         minimum = detected.min()
         maximum = detected.max()
-        hue = 343/360
+        hue = 343 / 360
         h = np.ones_like(detected) * hue
-        s = np.minimum(1, 2 - 2*(detected - minimum)/(maximum-minimum))
-        v = np.minimum(1, 2*(detected - minimum)/(maximum-minimum))
+        s = np.minimum(1, 2 - 2 * (detected - minimum) / (maximum - minimum))
+        v = np.minimum(1, 2 * (detected - minimum) / (maximum - minimum))
         concat = np.stack([h, s, v], -1)
         converted = colors.hsv_to_rgb(concat)
         return (converted * 255).astype(np.uint8)
