@@ -82,7 +82,7 @@ def adjacent_values(vals, q1, q3):
 plt.subplot(2, 1, 1)
 parts = plt.violinplot(areas, showextrema=False, showmeans=False, showmedians=False, vert=False)
 for pc in parts['bodies']:
-    pc.set_facecolor('#FF1F5B')
+    pc.set_facecolor('#00cd6c')
     pc.set_edgecolor('black')
     pc.set_alpha(1)
 
@@ -101,7 +101,7 @@ for area, rp in zip(areas, rps):
         continue
     plt.scatter(area, 1.5, marker='*', color='#FF1F5B', s=10)
     plt.text(area, 1.3, str(remap[rp.label]), horizontalalignment="center", verticalalignment="center",
-             color="#FF1F5B",
+             color="#00cd6c",
              size=10)
 
 plt.xlabel(r"Organoid area (x $10^3 \mu m^2$)")

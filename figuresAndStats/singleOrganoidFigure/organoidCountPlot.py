@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 fontsize = 10
 corrColor = [x / 255 for x in (0, 205, 108)]
 meanColor = [x / 255 for x in (0, 154, 222)]
-lodColor = [x / 255 for x in (255, 31, 91)]
+lodColor = [x / 255 for x in (0, 205, 108)]
 plt.rcParams['svg.fonttype'] = 'none'
 plt.rcParams['font.family'] = ['sans-serif']
 plt.rcParams['font.sans-serif'] = ['Arial']

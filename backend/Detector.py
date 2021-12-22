@@ -42,7 +42,7 @@ class Detector:
     def ConvertToHeatmap(self, detected: np.ndarray) -> np.ndarray:
         minimum = detected.min()
         maximum = detected.max()
-        hue = 343 / 360
+        hue = 44.8 / 360
         h = np.ones_like(detected) * hue
         s = np.minimum(1, 2 - 2 * (detected - minimum) / (maximum - minimum))
         v = np.minimum(1, 2 * (detected - minimum) / (maximum - minimum))

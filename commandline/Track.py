@@ -21,10 +21,49 @@ class Track(Program):
                             type=float)
         parser.add_argument("--individual", action="store_true",
                             help="If set, tracked images will be saved as separate frames.")
+        parser.add_argument("--batch", action="store_true",
+                            help="If set, each image will be treated as a separate tracking stack.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.ImageManager import LoadImages, SaveGIF, ShowImage, LabelTracks, SaveImage
         from backend.Tracker import Tracker
+
+        if parserArgs.batch:
+            # Load labeled images
+            labeledImages = LoadImages(parserArgs.labeledImagesPath, size=[512, 512])
+            originalImages = LoadImages(parserArgs.originalImagesPath, size=[512, 512], mode='L')
+
+            count = 1
+
+            # Track images
+            for labeledImage, originalImage in zip(labeledImages, originalImages):
+                # Load tracker
+                tracker = Tracker()
+                for i, frame in enumerate(labeledImage.frames):
+                    tracker.Track(frame)
+                    print("Tracking %d: %s (%d)" % (count, labeledImage.path, i))
+                    count += 1
+
+                # Load original images
+                originalFrames = [frame * parserArgs.brightness for frame in originalImage.frames]
+                outputImages = LabelTracks(tracker.GetTracks(), (255, 255, 255, 255), 255, 50, (0, 205, 108), {},
+                                           originalFrames)
+
+                # Export GIF
+                SaveGIF(outputImages, parserArgs.outputPath / (originalImage.path.stem + "_tracked.gif"))
+
+                # Export track data
+                csvFile = open(parserArgs.outputPath / (originalImage.path.stem + "_trackResults.csv"), 'w+')
+                csvFile.write("Frame, Original Label, Organoid ID\n")
+                for frameNumber in range(count - 1):
+                    for track in tracker.GetTracks():
+                        data = track.DataAtFrame(frameNumber)
+                        if data is None or not data.wasDetected:
+                            continue
+                        else:
+                            csvFile.write("%d, %d, %d\n" % (frameNumber, data.label, track.id))
+                csvFile.close()
+            return
 
         # Load labeled images
         labeledImages = LoadImages(parserArgs.labeledImagesPath, size=[512, 512])

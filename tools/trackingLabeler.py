@@ -155,6 +155,7 @@ class MainWindow(QMainWindow):
     def BuildTracks(self):
         tracksByID = {}
 
+        nextID = 0
         for (frameNumber, (regionProps, labelToTrackMap)) in enumerate(
                 zip(self.allRegionProps, self.labelToTrackIDMap)):
             detectedTracks = []
@@ -168,7 +169,8 @@ class MainWindow(QMainWindow):
                         # This one has already been detected!
                         continue
                 else:
-                    tracksByID[trackID] = Tracker.OrganoidTrack(frameNumber)
+                    tracksByID[trackID] = Tracker.OrganoidTrack(frameNumber, nextID)
+                    nextID += 1
                 tracksByID[trackID].Detect(rp.centroid, rp.area, rp.coords, rp.image, rp.bbox, rp.label)
                 detectedTracks.append(tracksByID[trackID])
 

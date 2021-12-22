@@ -42,30 +42,33 @@ class Detect(Program):
             count += 1
 
             detected_raw = image.DoOperation(detector.Detect)
-
+            if parserArgs.outputPath is not None:
+                if len(detected_raw.frames) > 1:
+                    extension = ".tiff"
+                else:
+                    extension = image.path.suffix
+                fileName = image.path.stem + "_detected" + extension
+                savePath = parserArgs.outputPath / fileName
+                if len(detected_raw.frames) > 1:
+                    SaveTIFFStack(detected_raw.frames, savePath)
+                else:
+                    SaveImage(detected_raw.frames[0], savePath)
             if parserArgs.heat:
-                # Color pixels with a heatmap.
-                outputImages.append(
-                    ("heat",
-                     detected_raw.DoOperation(lambda x: detector.ConvertToHeatmap(x)),
-                     None))
-            outputImages.append(("detected", detected_raw, ".tiff"))
+                heat = detected_raw.DoOperation(lambda x: detector.ConvertToHeatmap(x))
+                outputImages.append(heat)
+                if parserArgs.outputPath is not None:
+                    if len(heat.frames) > 1:
+                        extension = ".tiff"
+                    else:
+                        extension = ".png"
+                    fileName = image.path.stem + "_heat" + extension
+                    savePath = parserArgs.outputPath / fileName
+                    if len(heat.frames) > 1:
+                        SaveTIFFStack(heat.frames, savePath)
+                    else:
+                        SaveImage(heat.frames[0], savePath)
 
         if parserArgs.show:
-            for (_, outputImage, _) in outputImages:
+            for outputImage in outputImages:
                 for frame in outputImage.frames:
                     ShowImage(frame)
-
-        if parserArgs.outputPath is not None:
-            for name, outputImage, extension in outputImages:
-                if extension is None:
-                    extension = outputImage.path.suffix
-                if len(outputImage.frames) > 1:
-                    extension = ".tiff"
-                fileName = outputImage.path.stem + "_" + name + extension
-                savePath = parserArgs.outputPath / fileName
-                print(savePath)
-                if len(outputImage.frames) > 1:
-                    SaveTIFFStack(outputImage.frames, savePath)
-                else:
-                    SaveImage(outputImage.frames[0], savePath)

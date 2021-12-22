@@ -30,6 +30,7 @@ def ParseMap(filename: str):
 def BuildTracks(allRegionProps, trackMap):
     tracksByID = {}
 
+    nextID = 0
     for frameNumber, (regionProps, labelToTrackMap) in enumerate(
             zip(allRegionProps, trackMap)):
         detectedTracks = []
@@ -41,8 +42,9 @@ def BuildTracks(allRegionProps, trackMap):
                     # This one has already been detected!
                     continue
             else:
-                tracksByID[trackID] = Tracker.OrganoidTrack(frameNumber)
-            tracksByID[trackID].Detect(rp.centroid, rp.area, rp.coords, rp.image, rp.bbox, rp.label)
+                tracksByID[trackID] = Tracker.OrganoidTrack(frameNumber, nextID)
+                nextID += 1
+            tracksByID[trackID].Detect(rp)
             detectedTracks.append(tracksByID[trackID])
 
         [tracksByID[trackID].NoDetection() for trackID in tracksByID if tracksByID[trackID] not in detectedTracks]
@@ -60,9 +62,9 @@ def MatchTracks(a: List[Tracker.OrganoidTrack], b: List[Tracker.OrganoidTrack]):
     maxSize = max(len(a), len(b))
     costMatrix = np.zeros([maxSize, maxSize])
     for x, organoidA in enumerate(a):
-        centroidA = np.array(organoidA.data[0].centroid)
+        centroidA = np.array(organoidA.data[0].regionProperties.centroid)
         for y, organoidB in enumerate(b):
-            centroidB = np.array(organoidB.data[0].centroid)
+            centroidB = np.array(organoidB.data[0].regionProperties.centroid)
             costMatrix[x, y] = np.sqrt(np.sum(np.square(centroidA - centroidB)))
 
     aIndices, bIndices = linear_sum_assignment(costMatrix)
@@ -110,7 +112,7 @@ color = (255, 255, 255)
 idsToHighlight = {0: (0, 154, 222),
                   1: (255, 198, 30),
                   9: (175, 88, 186),
-                  33: (255, 31, 91)}
+                  33: (0, 205, 108)}
 renumberedAutomatedImages = LabelTracks(automatedTracks, (255, 255, 255), 255, 50, color, idsToHighlight,
                                         originalImage)
 renumberedGTImages = LabelTracks(groundTruthTracks, (255, 255, 255), 255, 50, color, idsToHighlight,
@@ -133,7 +135,7 @@ def CompareTrackData(dataA: Tracker.OrganoidFrameData, dataB: Tracker.OrganoidFr
         # Both tracks exist.
         if dataA.wasDetected and dataB.wasDetected:
             # Both tracks are detecting something in this frame. See if they are tracking the same organoid.
-            if dataA.label == dataB.label:
+            if dataA.regionProperties.label == dataB.regionProperties.label:
                 rating = 1
             else:
                 rating = -1
@@ -174,10 +176,10 @@ for frameNumber in range(numFrames):
             incorrectTracks += 1
 
         if automatedTrack.DataAtFrame(frameNumber) and automatedTrack.LastDetectionFrame() > frameNumber:
-            areasAutomated[frameNumber, trackNumber] = automatedTrack.DataAtFrame(frameNumber).area * 6.8644 / 1000
+            areasAutomated[frameNumber, trackNumber] = automatedTrack.DataAtFrame(frameNumber).regionProperties.area * 6.8644 / 1000
 
         if groundTruthTrack.DataAtFrame(frameNumber) and groundTruthTrack.LastDetectionFrame() > frameNumber:
-            areasGT[frameNumber, trackNumber] = groundTruthTrack.DataAtFrame(frameNumber).area * 6.8644 / 1000
+            areasGT[frameNumber, trackNumber] = groundTruthTrack.DataAtFrame(frameNumber).regionProperties.area * 6.8644 / 1000
 
     correctPerFrame.append(correctTracks)
     incorrectPerFrame.append(incorrectTracks)

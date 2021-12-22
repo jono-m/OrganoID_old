@@ -18,16 +18,6 @@ numFrames = performance.shape[1]
 
 frames = [i * 2 for i in range(numFrames)]
 
-# plt.subplot(2, 1, 1)
-# plt.plot(frames, percentCorrect)
-# plt.xlabel("Time (hours)")
-# plt.ylabel("Correct Tracks (Fraction of Total)")
-# plt.axhline(y=min(percentCorrect), color="r", linestyle="dashed")
-# plt.text(0, min(percentCorrect), "%.2f" % min(percentCorrect), verticalalignment='bottom',
-#          horizontalalignment='left', color="r")
-# plt.ylim([0.5, 1.1])
-# plt.xlim([frames[0]-1, frames[-1]-1])
-#
 idsToHighlight = {0: (0, 154, 222),
                   1: (255, 198, 30),
                   3: (175, 88, 186),

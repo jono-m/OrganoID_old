@@ -128,10 +128,9 @@ def SaveImage(image: np.ndarray, path: Path):
 # each island.
 def LabelToRGB(image: np.ndarray, textSize):
     # Scikit-image RGB is 0-1. Convert to 8-bit RGB.
-    colors = [(255, 31, 91),
-              (255, 198, 30),
+    colors = [(255, 198, 30),
               (175, 88, 186),
-              # (0, 205, 108),
+              (0, 205, 108),
               (0, 154, 222)]
     # (160, 177, 186),
     # (166, 118, 29)]
@@ -168,7 +167,7 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
         # Draw each present track on the frame
         for track in tracksAtFrame:
             data = track.DataAtFrame(frame)
-            fillCoords = list(zip(list(data.pixels[:, 1]), list(data.pixels[:, 0])))
+            fillCoords = list(zip(list(data.regionProperties.coords[:, 1]), list(data.regionProperties.coords[:, 0])))
 
             if data.wasDetected:
                 if track.id in specialColorMap:
@@ -179,14 +178,14 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
                 continue
 
             drawer.point(fillCoords, color + (fillAlpha,))
-            borderCoords = ComputeOutline(data.image)
-            globalCoords = borderCoords + data.bbox[:2]
+            borderCoords = ComputeOutline(data.regionProperties.image)
+            globalCoords = borderCoords + data.regionProperties.bbox[:2]
             xs = list(globalCoords[:, 1])
             ys = list(globalCoords[:, 0])
             outlineCoords = list(zip(xs, ys))
             drawer.point(outlineCoords, color + (outlineAlpha,))
 
-            y, x = list(data.centroid)
+            y, x = list(data.regionProperties.centroid)
             drawer.text((x, y), str(track.id), anchor="ms", fill=labelColor, font=font)
 
         baseImage = Image.fromarray(baseImage).convert(mode="RGBA")

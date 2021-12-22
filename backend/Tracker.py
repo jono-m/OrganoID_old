@@ -10,29 +10,19 @@ from util import Printer
 class Tracker:
     # Data point for one frame for one organoid
     class OrganoidFrameData:
-        def __init__(self, centroid, area, pixels, wasDetected, image, bbox, label):
-            self.centroid = centroid
-            self.area = area
-            self.pixels = pixels
-            self.wasDetected = wasDetected
-            self.image = image
-            self.bbox = bbox
-            self.label = label
+        def __init__(self, rp):
+            self.regionProperties = rp
+            self.wasDetected = True
 
         def Duplicate(self):
             # Clone this data point
-            return Tracker.OrganoidFrameData(self.centroid, self.area, self.pixels, self.wasDetected, self.image,
-                                             self.bbox, self.label)
+            return Tracker.OrganoidFrameData(self.regionProperties)
 
     class OrganoidTrack:
         # Collection of data points for a single identified organoid
 
-        # Static counter to assign the next organoid ID
-        nextID = 1
-
-        def __init__(self, frame):
-            self.id = Tracker.OrganoidTrack.nextID
-            Tracker.OrganoidTrack.nextID += 1
+        def __init__(self, frame, newID):
+            self.id = newID
 
             self.active = True
             self.firstFrame = frame
@@ -61,7 +51,6 @@ class Tracker:
         def NoDetection(self):
             # Report no detection of this track for the current frame
             data = self.data[-1].Duplicate()
-            data.label = None
             data.wasDetected = False
             self.data.append(data)
             self.invisibleConsecutive += 1
@@ -70,9 +59,9 @@ class Tracker:
         def LastData(self):
             return self.data[-1]
 
-        def Detect(self, centroid, area, pixels, image, bbox, label):
+        def Detect(self, rp):
             # Report a detection of this track at this frame
-            self.data.append(Tracker.OrganoidFrameData(centroid, area, pixels, True, image, bbox, label))
+            self.data.append(Tracker.OrganoidFrameData(rp))
             self.invisibleConsecutive = 0
             self.age += 1
 
@@ -83,16 +72,12 @@ class Tracker:
         self.costOfMissingOrganoid = 1
         self.deleteTracksAfterMissing = -1
         self.frame = 0
+        self.nextID = 0
 
     def Track(self, image: np.ndarray):
         # Morphologically analyze labled regions in the image
         detections = regionprops(image)
-        centroids = np.array([detection.centroid for detection in detections])
         coordinates = [detection.coords for detection in detections]
-        images = [detection.image for detection in detections]
-        bboxes = [detection.bbox for detection in detections]
-        labels = [detection.label for detection in detections]
-        areas = np.array([detection.area for detection in detections])
 
         # Get all currently active organoid tracks
         availableTracks = [track for track in self._tracks if track.active]
@@ -119,8 +104,10 @@ class Tracker:
         for trackNumber in range(numTracks):
             Printer.printRep("(Track %d/%d)" % (trackNumber, numTracks))
 
-            overlapCosts = self.OverlapCost(availableTracks[trackNumber].LastData().pixels, coordinates)
+            overlapCosts = self.OverlapCost(availableTracks[trackNumber].LastData().regionProperties.coords,
+                                            coordinates)
             costMatrix[trackNumber, 0:numDetections] = overlapCosts
+
         Printer.printRep(None)
         # Solve the assignment problem (Hungarian algorithm)
         trackIndices, detectionIndices = linear_sum_assignment(costMatrix)
@@ -141,19 +128,15 @@ class Tracker:
 
             if trackIndex >= numTracks:
                 # This organoid didn't get assigned to an existing track, so it must be new!
-                track = Tracker.OrganoidTrack(self.frame)
+                track = Tracker.OrganoidTrack(self.frame, self.nextID)
+                self.nextID += 1
                 self._tracks.append(track)
             else:
                 # This got assigned to an existing track.
                 track = availableTracks[trackIndex]
 
             # Register the detection.
-            track.Detect(centroids[detectionIndex],
-                         areas[detectionIndex],
-                         coordinates[detectionIndex],
-                         images[detectionIndex],
-                         bboxes[detectionIndex],
-                         labels[detectionIndex])
+            track.Detect(detections[detectionIndex])
 
         # Go through all tracks and inactivate any that have been missing for more than a given number of frames.
         if self.deleteTracksAfterMissing >= 0:
