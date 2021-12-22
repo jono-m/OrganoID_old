@@ -62,9 +62,9 @@ def MatchTracks(a: List[Tracker.OrganoidTrack], b: List[Tracker.OrganoidTrack]):
     maxSize = max(len(a), len(b))
     costMatrix = np.zeros([maxSize, maxSize])
     for x, organoidA in enumerate(a):
-        centroidA = np.array(organoidA.data[0].regionProperties.centroid)
+        centroidA = np.array(organoidA.Data(organoidA.firstFrame).regionProperties.centroid)
         for y, organoidB in enumerate(b):
-            centroidB = np.array(organoidB.data[0].regionProperties.centroid)
+            centroidB = np.array(organoidB.Data(organoidB.firstFrame).regionProperties.centroid)
             costMatrix[x, y] = np.sqrt(np.sum(np.square(centroidA - centroidB)))
 
     aIndices, bIndices = linear_sum_assignment(costMatrix)
@@ -133,13 +133,13 @@ for outputImage in renumberedAutomatedImages:
 def CompareTrackData(dataA: Tracker.OrganoidFrameData, dataB: Tracker.OrganoidFrameData):
     if dataA and dataB:
         # Both tracks exist.
-        if dataA.wasDetected and dataB.wasDetected:
+        if dataA.WasDetected() and dataB.WasDetected():
             # Both tracks are detecting something in this frame. See if they are tracking the same organoid.
             if dataA.regionProperties.label == dataB.regionProperties.label:
                 rating = 1
             else:
                 rating = -1
-        elif dataA.wasDetected == dataB.wasDetected:
+        elif dataA.WasDetected() == dataB.WasDetected():
             # Both tracks agree that they are missing. But they might be anticipating the same or different organoids.
             rating = 0
         else:
@@ -168,18 +168,20 @@ for frameNumber in range(numFrames):
     correctTracks = 0
     incorrectTracks = 0
     for trackNumber, (automatedTrack, groundTruthTrack) in enumerate(zip(automatedTracks, groundTruthTracks)):
-        comparison = CompareTrackData(automatedTrack.DataAtFrame(frameNumber),
-                                      groundTruthTrack.DataAtFrame(frameNumber))
+        comparison = CompareTrackData(automatedTrack.Data(frameNumber),
+                                      groundTruthTrack.Data(frameNumber))
         if comparison == 1:
             correctTracks += 1
         elif comparison == -1:
             incorrectTracks += 1
 
-        if automatedTrack.DataAtFrame(frameNumber) and automatedTrack.LastDetectionFrame() > frameNumber:
-            areasAutomated[frameNumber, trackNumber] = automatedTrack.DataAtFrame(frameNumber).regionProperties.area * 6.8644 / 1000
+        if automatedTrack.WasDetected(frameNumber) and automatedTrack.GetLastDetectedFrame() > frameNumber:
+            areasAutomated[frameNumber, trackNumber] = automatedTrack.Data(
+                frameNumber).regionProperties.area * 6.8644 / 1000
 
-        if groundTruthTrack.DataAtFrame(frameNumber) and groundTruthTrack.LastDetectionFrame() > frameNumber:
-            areasGT[frameNumber, trackNumber] = groundTruthTrack.DataAtFrame(frameNumber).regionProperties.area * 6.8644 / 1000
+        if groundTruthTrack.WasDetected(frameNumber) and groundTruthTrack.GetLastDetectedFrame() > frameNumber:
+            areasGT[frameNumber, trackNumber] = groundTruthTrack.Data(
+                frameNumber).regionProperties.area * 6.8644 / 1000
 
     correctPerFrame.append(correctTracks)
     incorrectPerFrame.append(incorrectTracks)

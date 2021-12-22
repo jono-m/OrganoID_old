@@ -103,9 +103,9 @@ class Track(Program):
         csvFile.write("Frame, Original Label, Organoid ID\n")
         for frameNumber in range(count - 1):
             for track in tracker.GetTracks():
-                data = track.DataAtFrame(frameNumber)
-                if data is None or not data.wasDetected:
+                if not track.WasDetected(frameNumber):
                     continue
                 else:
-                    csvFile.write("%d, %d, %d\n" % (frameNumber, data.label, track.id))
+                    data = track.Data(frameNumber)
+                    csvFile.write("%d, %d, %d\n" % (frameNumber, data.regionProperties.label, track.id))
         csvFile.close()

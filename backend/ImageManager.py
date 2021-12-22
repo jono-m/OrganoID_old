@@ -159,23 +159,20 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
 
     for frame, baseImage in enumerate(baseImages):
         # Find the tracks that are at the given frame number
-        tracksAtFrame = [track for track in tracks if track.DataAtFrame(frame) is not None]
+        tracksAtFrame = [track for track in tracks if track.WasDetected(frame)]
 
         pilImage = Image.new(mode="RGBA", size=baseImage.shape, color=(0, 0, 0, 0))
         drawer = ImageDraw.Draw(pilImage)
 
         # Draw each present track on the frame
         for track in tracksAtFrame:
-            data = track.DataAtFrame(frame)
+            data = track.Data(frame)
             fillCoords = list(zip(list(data.regionProperties.coords[:, 1]), list(data.regionProperties.coords[:, 0])))
 
-            if data.wasDetected:
-                if track.id in specialColorMap:
-                    color = specialColorMap[track.id]
-                else:
-                    color = mainColor
+            if track.id in specialColorMap:
+                color = specialColorMap[track.id]
             else:
-                continue
+                color = mainColor
 
             drawer.point(fillCoords, color + (fillAlpha,))
             borderCoords = ComputeOutline(data.regionProperties.image)

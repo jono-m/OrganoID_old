@@ -12,15 +12,36 @@ class Tracker:
     class OrganoidFrameData:
         def __init__(self, rp):
             self.regionProperties = rp
-            self.wasDetected = True
+            self.extraData = {}
+            self.coords = None
 
-        def Duplicate(self):
-            # Clone this data point
-            return Tracker.OrganoidFrameData(self.regionProperties)
+        def WasDetected(self):
+            return self.regionProperties is not None
+
+        def __getstate__(self):
+            state = self.__dict__.copy()
+            if self.regionProperties is not None:
+                state['coords'] = self.regionProperties.coords
+            else:
+                state['coords'] = None
+
+            del state['regionProperties']
+            return state
+
+        def __setstate__(self, state):
+            self.__dict__ = state
+
+        def LazyWasDetected(self):
+            return self.coords is not None
+
+        def GetRP(self):
+            coords = np.array(self.coords)
+            image = np.zeros([512, 512], dtype=np.uint8)
+            image[tuple(coords.T)] = 1
+            return regionprops(image)[0], image
 
     class OrganoidTrack:
         # Collection of data points for a single identified organoid
-
         def __init__(self, frame, newID):
             self.id = newID
 
@@ -28,40 +49,48 @@ class Tracker:
             self.firstFrame = frame
             self.age = 0
             self.invisibleConsecutive = 0
-            self.data: List[Tracker.OrganoidFrameData] = []
+            self._data: List[Tracker.OrganoidFrameData] = []
 
-        def LastDetectionFrame(self):
-            for frameNumber, data in reversed(list(enumerate(self.data))):
-                if data.wasDetected:
-                    return frameNumber + self.firstFrame
-            return self.firstFrame
-
-        def DataAtFrame(self, frame):
+        def Data(self, frameNumber):
             # Retrieve the datapoint for the given frame
-            if frame < self.firstFrame:
+            if not self.DidTrackExist(frameNumber):
                 return None
-            else:
-                # Frame number relative to when this track started
-                local = frame - self.firstFrame
-                if local >= len(self.data):
-                    return None
-                else:
-                    return self.data[local]
+            return self._data[frameNumber - self.firstFrame]
 
         def NoDetection(self):
             # Report no detection of this track for the current frame
-            data = self.data[-1].Duplicate()
-            data.wasDetected = False
-            self.data.append(data)
+            data = Tracker.OrganoidFrameData(None)
+            self._data.append(data)
             self.invisibleConsecutive += 1
             self.age += 1
 
-        def LastData(self):
-            return self.data[-1]
+        def WasDetected(self, frameNumber):
+            data = self.Data(frameNumber)
+            return data and data.WasDetected()
+
+        def DidTrackExist(self, frameNumber):
+            # Retrieve the datapoint for the given frame
+            if frameNumber < self.firstFrame:
+                return False
+            else:
+                # Frame number relative to when this track started
+                local = frameNumber - self.firstFrame
+                if local >= len(self._data):
+                    return False
+            return True
+
+        def GetLastDetectedFrame(self):
+            for i, data in reversed(list(enumerate(self._data))):
+                if data.WasDetected():
+                    return i + self.firstFrame
+            return None
+
+        def GetLastDetectedData(self):
+            return self.Data(self.GetLastDetectedFrame())
 
         def Detect(self, rp):
             # Report a detection of this track at this frame
-            self.data.append(Tracker.OrganoidFrameData(rp))
+            self._data.append(Tracker.OrganoidFrameData(rp))
             self.invisibleConsecutive = 0
             self.age += 1
 
@@ -104,7 +133,7 @@ class Tracker:
         for trackNumber in range(numTracks):
             Printer.printRep("(Track %d/%d)" % (trackNumber, numTracks))
 
-            overlapCosts = self.OverlapCost(availableTracks[trackNumber].LastData().regionProperties.coords,
+            overlapCosts = self.OverlapCost(availableTracks[trackNumber].GetLastDetectedData().regionProperties.coords,
                                             coordinates)
             costMatrix[trackNumber, 0:numDetections] = overlapCosts
 

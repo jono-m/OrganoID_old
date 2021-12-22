@@ -32,10 +32,13 @@ print(backgroundIDs.shape)
 print(repFrames.shape)
 plt.scatter(repFrames, backgroundIDs, marker='o', color=(0.9, 0.9, 0.9),
             label="_nolabel", s=10)
-[plt.plot(frames, areasAutomated[:, idToHighlight], '-', color=idsToHighlight[idToHighlight], label=str(idToHighlight))
- for idToHighlight in idsToHighlight]
+for idToHighlight in idsToHighlight:
+    ind = ~np.isnan(areasAutomated[:, idToHighlight])
+    plt.plot(np.asarray(frames)[ind], areasAutomated[ind, idToHighlight], '-', color=idsToHighlight[idToHighlight],
+             label=str(idToHighlight))
+
 [plt.scatter(frames, areasAutomated[:, idToHighlight], marker='o', color=idsToHighlight[idToHighlight],
-             label="_nolabel", s=10)
+             label="_nolabel", s=10, zorder=3)
  for idToHighlight in idsToHighlight]
 plt.legend()
 plt.xlabel("Time (hours)")

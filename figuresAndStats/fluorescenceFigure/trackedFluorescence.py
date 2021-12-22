@@ -4,25 +4,11 @@ import sys
 
 sys.path.append(str(Path(".").resolve()))
 import re
-import matplotlib.pyplot as plt
-import colorsys
 from backend.ImageManager import LoadImages
 from backend.Tracker import Tracker
 from skimage.measure import regionprops
 import dill
 import numpy as np
-
-fontsize = 10
-corrColor = [x / 255 for x in (0, 205, 108)]
-meanColor = [x / 255 for x in (0, 154, 222)]
-lodColor = [x / 255 for x in (255, 31, 91)]
-plt.rcParams['svg.fonttype'] = 'none'
-plt.rcParams['font.family'] = ['sans-serif']
-plt.rcParams['font.sans-serif'] = ['Arial']
-plt.rcParams['axes.labelsize'] = fontsize
-plt.rcParams['xtick.labelsize'] = fontsize
-plt.rcParams['ytick.labelsize'] = fontsize
-plt.rcParams['legend.fontsize'] = fontsize
 
 
 def ParseMap(trackingResultsFile: Path):
@@ -108,11 +94,11 @@ for i, image in enumerate(fluorescenceImages):
 
     for frameNumber in range(19):
         for trackNumber, track in enumerate(tracks):
-            if track.DataAtFrame(frameNumber) and track.LastDetectionFrame() >= frameNumber:
-                data = track.DataAtFrame(frameNumber)
+            if track.WasDetected(frameNumber) and track.GetLastDetectedFrame() >= frameNumber:
+                data = track.Data(frameNumber)
                 rp = data.regionProperties
                 fluorescence = np.sum(image.frames[frameNumber][rp.coords])
-                data.fluorescence = fluorescence
+                data.extraData['fluorescence'] = fluorescence
 
 outFile = open(Path(r"figuresAndStats\fluorescenceFigure\data\tracks.pkl"), "wb+")
 dill.dump(tracksByDosage, outFile)
