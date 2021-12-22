@@ -25,7 +25,7 @@ plt.rcParams['xtick.labelsize'] = fontsize
 plt.rcParams['ytick.labelsize'] = fontsize
 plt.rcParams['legend.fontsize'] = fontsize
 
-file = open(Path(r"figuresAndStats\fluorescenceFigure\data\tracks.pkl"), "rb")
+file = open(Path(r"figuresAndStats\fluorescenceFigure\data\tracksB.pkl"), "rb")
 dosagesToUse = [0, 3, 30, 100, 300, 1000]
 tracksByDosage: Dict[int, List[Tuple[int, Tracker.OrganoidTrack]]] = dill.load(file)
 
