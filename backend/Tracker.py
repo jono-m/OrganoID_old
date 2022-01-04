@@ -10,35 +10,30 @@ from util import Printer
 class Tracker:
     # Data point for one frame for one organoid
     class OrganoidFrameData:
-        def __init__(self, rp):
-            self.regionProperties = rp
+        def __init__(self, coords):
             self.extraData = {}
-            self.coords = None
-
-        def WasDetected(self):
-            return self.regionProperties is not None
+            self.coords = coords
+            self._regionProperties = None
 
         def __getstate__(self):
             state = self.__dict__.copy()
-            if self.regionProperties is not None:
-                state['coords'] = self.regionProperties.coords
-            else:
-                state['coords'] = None
-
-            del state['regionProperties']
+            del state['_regionProperties']
             return state
 
         def __setstate__(self, state):
             self.__dict__ = state
+            self._regionProperties = None
 
-        def LazyWasDetected(self):
+        def WasDetected(self):
             return self.coords is not None
 
         def GetRP(self):
-            coords = np.array(self.coords)
-            image = np.zeros([512, 512], dtype=np.uint8)
-            image[tuple(coords.T)] = 1
-            return regionprops(image)[0], image
+            if self._regionProperties is None and self.coords is not None:
+                coords = np.array(self.coords)
+                image = np.zeros([512, 512], dtype=np.uint8)
+                image[tuple(coords.T)] = 1
+                self._regionProperties = regionprops(image)[0]
+            return self._regionProperties
 
     class OrganoidTrack:
         # Collection of data points for a single identified organoid
@@ -88,9 +83,9 @@ class Tracker:
         def GetLastDetectedData(self):
             return self.Data(self.GetLastDetectedFrame())
 
-        def Detect(self, rp):
+        def Detect(self, coords):
             # Report a detection of this track at this frame
-            self._data.append(Tracker.OrganoidFrameData(rp))
+            self._data.append(Tracker.OrganoidFrameData(coords))
             self.invisibleConsecutive = 0
             self.age += 1
 
@@ -133,7 +128,7 @@ class Tracker:
         for trackNumber in range(numTracks):
             Printer.printRep("(Track %d/%d)" % (trackNumber, numTracks))
 
-            overlapCosts = self.OverlapCost(availableTracks[trackNumber].GetLastDetectedData().regionProperties.coords,
+            overlapCosts = self.OverlapCost(availableTracks[trackNumber].GetLastDetectedData().GetRP().coords,
                                             coordinates)
             costMatrix[trackNumber, 0:numDetections] = overlapCosts
 
@@ -165,7 +160,7 @@ class Tracker:
                 track = availableTracks[trackIndex]
 
             # Register the detection.
-            track.Detect(detections[detectionIndex])
+            track.Detect(detections[detectionIndex].coords)
 
         # Go through all tracks and inactivate any that have been missing for more than a given number of frames.
         if self.deleteTracksAfterMissing >= 0:

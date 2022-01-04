@@ -44,7 +44,7 @@ def BuildTracks(allRegionProps, trackMap):
             else:
                 tracksByID[trackID] = Tracker.OrganoidTrack(frameNumber, nextID)
                 nextID += 1
-            tracksByID[trackID].Detect(rp)
+            tracksByID[trackID].Detect(rp.coords)
             detectedTracks.append(tracksByID[trackID])
 
         [tracksByID[trackID].NoDetection() for trackID in tracksByID if tracksByID[trackID] not in detectedTracks]

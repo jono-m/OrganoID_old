@@ -34,12 +34,19 @@ for i, image in enumerate(fluorescenceImages):
     xy = GetXY(image.path.stem)
     print("XY: %d" % xy)
     dosage = GetDosage(xy)
-    fluorescences = [np.sum(frame) for frame in image.frames]
-    fluorescences = [f / fluorescences[0] for f in fluorescences]
+    fluorescences = [np.sum(frame/1000) for frame in image.frames]
     if GetPatient(xy):
-        fluorescenceByDosageA[dosage].append(fluorescences)
+        if xy % 2 == 1:
+            fluorescenceByDosageA[dosage][-1] = list(
+                np.array(fluorescenceByDosageA[dosage][-1]) + np.array(fluorescences))
+        else:
+            fluorescenceByDosageA[dosage].append(fluorescences)
     else:
-        fluorescenceByDosageB[dosage].append(fluorescences)
+        if xy % 2 == 1:
+            fluorescenceByDosageB[dosage][-1] = list(
+                np.array(fluorescenceByDosageB[dosage][-1]) + np.array(fluorescences))
+        else:
+            fluorescenceByDosageB[dosage].append(fluorescences)
 
 areas_by_dosageA = {dosage: [] for dosage in dosages}
 numbers_by_dosageA = {dosage: [] for dosage in dosages}
@@ -50,16 +57,22 @@ for i, image in enumerate(organoidImages):
     print("XY: %d" % xy)
     dosage = GetDosage(xy)
     areas = [np.count_nonzero(frame) for frame in image.frames]
-    areas = [a / areas[0] for a in areas]
     number = [len(np.unique(frame)) - 1 for frame in image.frames]
-    number = [n / number[0] for n in number]
 
     if GetPatient(xy):
-        areas_by_dosageA[dosage].append(areas)
-        numbers_by_dosageA[dosage].append(number)
+        if xy % 2 == 1:
+            areas_by_dosageA[dosage][-1] = list(np.array(areas_by_dosageA[dosage][-1]) + np.array(areas))
+            numbers_by_dosageA[dosage][-1] = list(np.array(numbers_by_dosageA[dosage][-1]) + np.array(number))
+        else:
+            areas_by_dosageA[dosage].append(areas)
+            numbers_by_dosageA[dosage].append(number)
     else:
-        areas_by_dosageB[dosage].append(areas)
-        numbers_by_dosageB[dosage].append(number)
+        if xy % 2 == 1:
+            areas_by_dosageB[dosage][-1] = list(np.array(areas_by_dosageB[dosage][-1]) + np.array(areas))
+            numbers_by_dosageB[dosage][-1] = list(np.array(numbers_by_dosageB[dosage][-1]) + np.array(number))
+        else:
+            areas_by_dosageB[dosage].append(areas)
+            numbers_by_dosageB[dosage].append(number)
 
 dill.dump(fluorescenceByDosageA, open(r"figuresAndStats\fluorescenceFigure\data\fluorescenceTotalA.pkl", "wb+"))
 dill.dump(fluorescenceByDosageB, open(r"figuresAndStats\fluorescenceFigure\data\fluorescenceTotalB.pkl", "wb+"))

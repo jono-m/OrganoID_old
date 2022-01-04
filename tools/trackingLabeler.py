@@ -171,7 +171,7 @@ class MainWindow(QMainWindow):
                 else:
                     tracksByID[trackID] = Tracker.OrganoidTrack(frameNumber, nextID)
                     nextID += 1
-                tracksByID[trackID].Detect(rp.centroid, rp.area, rp.coords, rp.image, rp.bbox, rp.label)
+                tracksByID[trackID].Detect(rp.coords)
                 detectedTracks.append(tracksByID[trackID])
 
             [tracksByID[trackID].NoDetection() for trackID in tracksByID if tracksByID[trackID] not in detectedTracks]

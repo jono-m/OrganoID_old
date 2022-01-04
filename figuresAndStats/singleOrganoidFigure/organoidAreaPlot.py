@@ -42,6 +42,7 @@ plt.plot([0, maxArea], [0, maxArea], "-", color=corrColor)
 
 plt.subplot(1, 2, 2)
 means = [(x + y) / 2 for (x, y) in zip(organoID_areas, manual_areas)]
+print("Area average: %f" % np.mean(means))
 differences = [(x - y) for (x, y) in zip(organoID_areas, manual_areas)]
 plt.scatter(means, differences, marker='o', color='k', s=5)
 

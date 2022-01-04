@@ -40,7 +40,7 @@ def BuildTracks(labeledImages, labelMaps):
                 if matchedTrack in detectedTracks:
                     # This one has already been detected!
                     continue
-            matchedTrack.Detect(rp)
+            matchedTrack.Detect(rp.coords)
             detectedTracks.append(matchedTrack)
 
         [t.NoDetection() for t in builtTracks if t not in detectedTracks]
@@ -98,8 +98,8 @@ for i, image in enumerate(fluorescenceImages):
         for trackNumber, track in enumerate(tracks):
             if track.WasDetected(frameNumber) and track.GetLastDetectedFrame() >= frameNumber:
                 data = track.Data(frameNumber)
-                rp = data.regionProperties
-                fluorescence = np.sum(image.frames[frameNumber][rp.coords])
+                rp = data.GetRP()
+                fluorescence = np.sum(image.frames[frameNumber][rp.coords]/1000)
                 data.extraData['fluorescence'] = fluorescence
 
 dill.dump(tracksByDosageA, open(Path(r"figuresAndStats\fluorescenceFigure\data\tracksA.pkl"), "wb+"))
