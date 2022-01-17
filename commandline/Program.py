@@ -21,11 +21,3 @@ class Program(ABC):
 
     def RunProgram(self, parserArgs: argparse.Namespace):
         pass
-
-    def printRep(self, text=None):
-        if text is None:
-            print("")
-            self._lastPrint = ""
-        else:
-            print("\b" * len(self._lastPrint) + text, end='\r')
-            self._lastPrint = text

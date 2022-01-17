@@ -3,13 +3,12 @@ from typing import Dict, List, Tuple, Optional
 import sys
 
 sys.path.append(str(Path(".").resolve()))
-import re
 import matplotlib.pyplot as plt
 import colorsys
-from backend.ImageManager import LoadImages, ShowImage
 from backend.Tracker import Tracker
-import scipy.stats as stats
-from skimage.measure import regionprops
+from scipy.stats import f_oneway, kruskal, alexandergovern
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+from scikit_posthocs import posthoc_dunn
 import pandas
 import seaborn
 import dill
@@ -28,7 +27,7 @@ plt.rcParams['ytick.labelsize'] = fontsize
 plt.rcParams['legend.fontsize'] = fontsize
 
 file = open(Path(r"figuresAndStats\fluorescenceFigure\data\tracksB.pkl"), "rb")
-dosagesToUse = [0]
+dosagesToUse = [0, 10, 100]
 tracksByDosage: Dict[int, List[Tuple[int, Tracker.OrganoidTrack]]] = dill.load(file)
 
 allData = []
@@ -58,16 +57,35 @@ colors = [colorsys.hsv_to_rgb(hue, sat, 1) for sat in np.linspace(0.2, 1, 2)] + 
          [colorsys.hsv_to_rgb(hue, 1, val) for val in np.linspace(0, 0, 1)]
 allData["Fluorescence intensity per area"] = allData["Fluorescence"] / allData["Area"]
 
-circBounds = [f(allData["Circularity"]) for f in (np.min, np.max)]
-fluorBounds = [f(allData["Fluorescence intensity per area"]) for f in (np.min, np.max)]
-
 d = allData[allData["Time"] == 18]
 jp = seaborn.JointGrid(data=d, y="Fluorescence intensity per area", x="Circularity", hue="Dose",
                        palette={dose: color for color, dose in zip(colors, dosagesToUse)})
 jp.plot_marginals(seaborn.kdeplot, common_norm=False, fill=True, alpha=0.7)
-jp.plot_joint(seaborn.kdeplot, common_norm=False)
-jp.plot_joint(seaborn.scatterplot, s=4)
+jp.plot_joint(seaborn.scatterplot, s=10)
+jp.ax_joint.axvline(1.0, color="black")
+for color, dose in zip(colors, dosagesToUse):
+    jp.ax_marg_x.axvline(d[d["Dose"] == dose]["Circularity"].mean(), color=color)
+    jp.ax_marg_y.axhline(d[d["Dose"] == dose]["Fluorescence intensity per area"].mean(), color=color)
 
+fig, axes = plt.subplots(1, 2)
+seaborn.kdeplot(data=d, x="Fluorescence", hue="Dose", palette={dose: color for color, dose in zip(colors, dosagesToUse)},
+                common_norm=False, fill=True, alpha=0.7, ax=axes[0])
+for color, dose in zip(colors, dosagesToUse):
+    axes[0].axvline(d[d["Dose"] == dose]["Fluorescence"].mean(), color=color)
+
+seaborn.kdeplot(data=d, x="Area", hue="Dose", palette={dose: color for color, dose in zip(colors, dosagesToUse)},
+                common_norm=False, fill=True, alpha=0.7, ax=axes[1])
+for color, dose in zip(colors, dosagesToUse):
+    axes[1].axvline(d[d["Dose"] == dose]["Area"].mean(), color=color)
+circularitySamples = [d[d["Dose"] == dose]["Circularity"] for dose in dosagesToUse]
+fpaSamples = [d[d["Dose"] == dose]["Fluorescence intensity per area"] for dose in dosagesToUse]
+fSamples = [d[d["Dose"] == dose]["Fluorescence"] for dose in dosagesToUse]
+aSamples = [d[d["Dose"] == dose]["Area"] for dose in dosagesToUse]
+print("----\nANOVA\n----")
+print("Circularity: " + str(f_oneway(*circularitySamples)))
+print("FPA: " + str(f_oneway(*fpaSamples)))
+print("Fluorescence: " + str(f_oneway(*fSamples)))
+print("Area: " + str(f_oneway(*aSamples)))
 
 # plt.legend()
 plt.show()

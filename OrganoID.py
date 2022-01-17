@@ -3,13 +3,14 @@
 import argparse
 from commandline.Augment import Augment
 from commandline.Detect import Detect
+from commandline.Analyze import Analyze
 from commandline.Label import Label
 from commandline.Split import Split
 from commandline.Track import Track
 from commandline.Train import Train
 
 # List of sub-programs.
-programs = [Augment, Detect, Label, Split, Track, Train]
+programs = [Augment, Detect, Label, Split, Track, Train, Analyze]
 
 # Parse sub-program selection
 parser = argparse.ArgumentParser(
