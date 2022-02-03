@@ -40,13 +40,13 @@ class Label(Program):
             print("Labeling %d: %s" % (count, image.path))
             count += 1
 
-            edges = image.DoOperation(DetectEdges)
-            identified = image.DoOperation(lambda x: Label(x, parserArgs.minArea, parserArgs.removeBorder), True)
+            identified = image.DoOperation(lambda x: Label(x, parserArgs.minArea, parserArgs.removeBorder), "Labeling")
 
             outputImages = []
             if parserArgs.rgb:
-                outputImages.append(("rgb", identified.DoOperation(lambda x: LabelToRGB(x, parserArgs.textSize), True)))
+                outputImages.append(("rgb", identified.DoOperation(lambda x: LabelToRGB(x, parserArgs.textSize), "Converting to RGB")))
             if parserArgs.edge:
+                edges = image.DoOperation(DetectEdges, "Finding edges")
                 outputImages.append(("edges", edges))
             outputImages.append(("labeled", identified))
 
@@ -58,7 +58,6 @@ class Label(Program):
                     extension = outputImage.path.suffix
                     fileName = outputImage.path.stem + "_" + name + extension
                     savePath = parserArgs.outputPath / fileName
-                    print(savePath)
                     if len(outputImage.frames) > 1:
                         SaveTIFFStack(outputImage.frames, savePath)
                     else:

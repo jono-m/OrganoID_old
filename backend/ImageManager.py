@@ -22,14 +22,12 @@ class SmartImage:
         self.path = path
         self.frames = frames
 
-    def DoOperation(self, operation: Callable[[np.ndarray], np.ndarray], verbose=False):
+    def DoOperation(self, operation: Callable[[np.ndarray], np.ndarray], verboseLabel):
         images = []
         for i, frame in enumerate(self.frames):
-            if verbose:
-                Printer.printRep("%d/%d" % (i + 1, len(self.frames)))
+            Printer.printRep("%s: %d/%d" % (verboseLabel, i + 1, len(self.frames)))
             images.append(operation(frame))
-        if verbose:
-            Printer.printRep()
+        Printer.printRep()
         return SmartImage(self.path, images)
 
 

@@ -7,5 +7,5 @@ class Printer:
             print("")
             Printer._lastPrint = ""
         else:
-            print("\b" * len(Printer._lastPrint) + text, end='\r')
+            print("\b" * len(Printer._lastPrint) + text, end='\r', flush=True)
             Printer._lastPrint = text

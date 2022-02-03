@@ -39,7 +39,7 @@ class Detect(Program):
             print("Detecting %d: %s" % (count, image.path))
             count += 1
 
-            detected_raw = image.DoOperation(detector.Detect, True)
+            detected_raw = image.DoOperation(detector.Detect, "Frame")
             if parserArgs.outputPath is not None:
                 if len(detected_raw.frames) > 1:
                     extension = ".tiff"
@@ -52,7 +52,7 @@ class Detect(Program):
                 else:
                     SaveImage(detected_raw.frames[0], savePath)
             if parserArgs.heat:
-                heat = detected_raw.DoOperation(lambda x: detector.ConvertToHeatmap(x))
+                heat = detected_raw.DoOperation(lambda x: detector.ConvertToHeatmap(x), "Building heatmap")
                 outputImages.append(heat)
                 if parserArgs.outputPath is not None:
                     if len(heat.frames) > 1:

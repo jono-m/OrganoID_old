@@ -16,11 +16,13 @@ class Track(Program):
         parser.add_argument("labeledImagesPath", help="Path to labeled images to process.", type=pathlib.Path)
         parser.add_argument("originalImagesPath", help="Path to original microscopy images for overlaying.",
                             type=pathlib.Path)
-        parser.add_argument("outputPath", help="Path where results will be saved.", type=pathlib.Path)
-        parser.add_argument("-B", dest="brightness", default=1, help="Brightness multiplier for original image.",
-                            type=float)
+        parser.add_argument("outputPath", help="Directory where results will be saved.", type=pathlib.Path)
+        parser.add_argument("-measure", nargs="+", dest="features", help="List of features to measure. "
+                                                                         "See https://scikit-image.org/docs/dev/api/skimage.measure.html#skimage.measure.regionprops for available features")
         parser.add_argument("--individual", action="store_true",
                             help="If set, tracked images will be saved as separate frames.")
+        parser.add_argument("--gif", action="store_true",
+                            help="If set, tracked images will be saved as a GIF video.")
         parser.add_argument("--batch", action="store_true",
                             help="If set, each image will be treated as a separate tracking stack.")
 
@@ -49,20 +51,25 @@ class Track(Program):
                 outputImages = LabelTracks(tracker.GetTracks(), (255, 255, 255, 255), 255, 50, (0, 205, 108), {},
                                            originalFrames)
 
-                # Export GIF
-                SaveGIF(outputImages, parserArgs.outputPath / (originalImage.path.stem + "_tracked.gif"))
+                if parserArgs.gif:
+                    # Export GIF
+                    SaveGIF(outputImages, parserArgs.outputPath / (originalImage.path.stem + "_tracked.gif"))
 
-                # Export track data
-                csvFile = open(parserArgs.outputPath / (originalImage.path.stem + "_trackResults.csv"), 'w+')
-                csvFile.write("Frame, Original Label, Organoid ID\n")
-                for frameNumber in range(count - 1):
-                    for track in tracker.GetTracks():
-                        data = track.DataAtFrame(frameNumber)
-                        if data is None or not data.wasDetected:
-                            continue
-                        else:
-                            csvFile.write("%d, %d, %d\n" % (frameNumber, data.label, track.id))
-                csvFile.close()
+                if parserArgs.features:
+                    trackInfo = "Frame, Original Label, Organoid ID, " + ", ".join(parserArgs.features)
+                    for frameNumber in range(count - 1):
+                        tracks = [track for track in tracker.GetTracks() if track.WasDetected(frameNumber)]
+                        for track in tracks:
+                            data = track.Data(frameNumber)
+                            rp = data.GetRP()
+                            trackInfo += "%d, %d, %d, %s\n" % (frameNumber, rp.label, track.id,
+                                                               ", ".join([str(eval("rp." + feature)) for feature in
+                                                                          parserArgs.features]))
+
+                    # Export track data
+                    csvFile = open(parserArgs.outputPath / (originalImage.path.stem + "_trackResults.csv"), 'w+')
+                    csvFile.write(trackInfo)
+                    csvFile.close()
             return
 
         # Load labeled images
@@ -82,12 +89,13 @@ class Track(Program):
 
         # Load original images
         originalImages = LoadImages(parserArgs.originalImagesPath, size=[512, 512], mode='L')
-        originalFrames = [frame * parserArgs.brightness for baseImage in originalImages for frame in baseImage.frames]
+        originalFrames = [frame for baseImage in originalImages for frame in baseImage.frames]
         outputImages = LabelTracks(tracker.GetTracks(), (255, 255, 255, 255), 255, 50, (0, 205, 108), {},
                                    originalFrames)
 
-        # Export GIF
-        SaveGIF(outputImages, parserArgs.outputPath / "trackResults.gif")
+        if parserArgs.gif:
+            # Export GIF
+            SaveGIF(outputImages, parserArgs.outputPath / "trackResults.gif")
 
         # Export original images
         if parserArgs.individual:
@@ -98,14 +106,18 @@ class Track(Program):
                 savePath = parserArgs.outputPath / fileName
                 SaveImage(outputImage, savePath)
 
-        # Export track data
         csvFile = open(parserArgs.outputPath / "trackResults.csv", 'w+')
-        csvFile.write("Frame, Original Label, Organoid ID\n")
-        for frameNumber in range(count - 1):
-            for track in tracker.GetTracks():
-                if not track.WasDetected(frameNumber):
-                    continue
-                else:
+        if parserArgs.features:
+            trackInfo = "Frame, Original Label, Organoid ID, " + ", ".join(parserArgs.features) + "\n"
+            for frameNumber in range(count - 1):
+                tracks = [track for track in tracker.GetTracks() if track.WasDetected(frameNumber)]
+                for track in tracks:
                     data = track.Data(frameNumber)
-                    csvFile.write("%d, %d, %d\n" % (frameNumber, data.GetRP().label, track.id))
-        csvFile.close()
+                    rp = data.GetRP()
+                    trackInfo += "%d, %d, %d, %s\n" % (frameNumber, rp.label, track.id,
+                                                       ", ".join([str(eval("rp." + feature, {}, {"rp": rp})) for feature in
+                                                                  parserArgs.features]))
+
+            # Export track data
+            csvFile.write(trackInfo)
+            csvFile.close()
