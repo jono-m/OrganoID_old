@@ -1,13 +1,8 @@
-try:
-    from tflite_runtime.interpreter import Interpreter
-except ImportError as e:
-    import tensorflow as tf
+from tflite_runtime.interpreter import Interpreter
 
-    Interpreter = tf.lite.Interpreter
 from pathlib import Path
 import numpy as np
-import matplotlib.colors as colors
-import colorsys
+import skimage.color as colors
 import typing
 
 
@@ -39,7 +34,8 @@ class Detector:
         output = self._interpreter.get_tensor(self._output_index)
         return output[:, :, :, 0]
 
-    def ConvertToHeatmap(self, detected: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def ConvertToHeatmap(detected: np.ndarray) -> np.ndarray:
         minimum = detected.min()
         maximum = detected.max()
         hue = 44.8 / 360
@@ -47,5 +43,5 @@ class Detector:
         s = np.minimum(1, 2 - 2 * (detected - minimum) / (maximum - minimum))
         v = np.minimum(1, 2 * (detected - minimum) / (maximum - minimum))
         concat = np.stack([h, s, v], -1)
-        converted = colors.hsv_to_rgb(concat)
+        converted = colors.hsv2rgb(concat)
         return (converted * 255).astype(np.uint8)

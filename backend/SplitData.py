@@ -14,7 +14,8 @@ def SplitData(imagePaths: List[Path], segmentationPaths: List[Path], testSize: f
 
     # Only use paths that have matched names in image and segmentations directory
     imagePaths = [path for path in imagePaths if path.stem in [segPath.stem for segPath in segmentationPaths]]
-    segmentationPaths = [path for path in segmentationPaths if path.stem in [imagePath.stem for imagePath in imagePaths]]
+    segmentationPaths = [path for path in segmentationPaths if
+                         path.stem in [imagePath.stem for imagePath in imagePaths]]
 
     # Carry out the split!
     trainingImagePaths, testingImagePaths, trainingSegmentationPaths, testingSegmentationPaths = train_test_split(

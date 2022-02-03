@@ -28,6 +28,7 @@ def pearsonr_ci(x, y, alpha=0.05):
     lo, hi = np.tanh((lo_z, hi_z))
     return r, p, lo, hi
 
+
 def linr_ci(x, y, alpha=0.05):
     ''' calculate Lin concordance correlation along with the confidence interval using scipy and numpy
     Parameters

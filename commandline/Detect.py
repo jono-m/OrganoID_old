@@ -25,8 +25,6 @@ class Detect(Program):
     def RunProgram(self, parserArgs: argparse.Namespace):
         from backend.ImageManager import LoadImages, SaveImage, ShowImage, SaveTIFFStack
         from backend.Detector import Detector
-        import numpy as np
-        import matplotlib.pyplot as plt
 
         # Load the images
         images = LoadImages(parserArgs.imagesPath, size=[512, 512], mode="L")
@@ -41,7 +39,7 @@ class Detect(Program):
             print("Detecting %d: %s" % (count, image.path))
             count += 1
 
-            detected_raw = image.DoOperation(detector.Detect)
+            detected_raw = image.DoOperation(detector.Detect, True)
             if parserArgs.outputPath is not None:
                 if len(detected_raw.frames) > 1:
                     extension = ".tiff"

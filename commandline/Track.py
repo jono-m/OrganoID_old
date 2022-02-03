@@ -25,7 +25,7 @@ class Track(Program):
                             help="If set, each image will be treated as a separate tracking stack.")
 
     def RunProgram(self, parserArgs: argparse.Namespace):
-        from backend.ImageManager import LoadImages, SaveGIF, ShowImage, LabelTracks, SaveImage
+        from backend.ImageManager import LoadImages, SaveGIF, LabelTracks, SaveImage
         from backend.Tracker import Tracker
 
         if parserArgs.batch:
@@ -107,5 +107,5 @@ class Track(Program):
                     continue
                 else:
                     data = track.Data(frameNumber)
-                    csvFile.write("%d, %d, %d\n" % (frameNumber, data.regionProperties.label, track.id))
+                    csvFile.write("%d, %d, %d\n" % (frameNumber, data.GetRP().label, track.id))
         csvFile.close()

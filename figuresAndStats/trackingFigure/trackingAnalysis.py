@@ -62,9 +62,9 @@ def MatchTracks(a: List[Tracker.OrganoidTrack], b: List[Tracker.OrganoidTrack]):
     maxSize = max(len(a), len(b))
     costMatrix = np.zeros([maxSize, maxSize])
     for x, organoidA in enumerate(a):
-        centroidA = np.array(organoidA.Data(organoidA.firstFrame).regionProperties.centroid)
+        centroidA = np.array(organoidA.Data(organoidA.firstFrame).GetRP().centroid)
         for y, organoidB in enumerate(b):
-            centroidB = np.array(organoidB.Data(organoidB.firstFrame).regionProperties.centroid)
+            centroidB = np.array(organoidB.Data(organoidB.firstFrame).GetRP().centroid)
             costMatrix[x, y] = np.sqrt(np.sum(np.square(centroidA - centroidB)))
 
     aIndices, bIndices = linear_sum_assignment(costMatrix)
@@ -135,7 +135,7 @@ def CompareTrackData(dataA: Tracker.OrganoidFrameData, dataB: Tracker.OrganoidFr
         # Both tracks exist.
         if dataA.WasDetected() and dataB.WasDetected():
             # Both tracks are detecting something in this frame. See if they are tracking the same organoid.
-            if dataA.regionProperties.label == dataB.regionProperties.label:
+            if dataA.GetRP().label == dataB.GetRP().label:
                 rating = 1
             else:
                 rating = -1
@@ -177,11 +177,11 @@ for frameNumber in range(numFrames):
 
         if automatedTrack.WasDetected(frameNumber) and automatedTrack.GetLastDetectedFrame() > frameNumber:
             areasAutomated[frameNumber, trackNumber] = automatedTrack.Data(
-                frameNumber).regionProperties.area * 6.8644 / 1000
+                frameNumber).GetRP().area * 6.8644 / 1000
 
         if groundTruthTrack.WasDetected(frameNumber) and groundTruthTrack.GetLastDetectedFrame() > frameNumber:
             areasGT[frameNumber, trackNumber] = groundTruthTrack.Data(
-                frameNumber).regionProperties.area * 6.8644 / 1000
+                frameNumber).GetRP().area * 6.8644 / 1000
 
     correctPerFrame.append(correctTracks)
     incorrectPerFrame.append(incorrectTracks)

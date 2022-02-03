@@ -167,7 +167,7 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
         # Draw each present track on the frame
         for track in tracksAtFrame:
             data = track.Data(frame)
-            fillCoords = list(zip(list(data.regionProperties.coords[:, 1]), list(data.regionProperties.coords[:, 0])))
+            fillCoords = list(zip(list(data.GetRP().coords[:, 1]), list(data.GetRP().coords[:, 0])))
 
             if track.id in specialColorMap:
                 color = specialColorMap[track.id]
@@ -175,14 +175,14 @@ def LabelTracks(tracks: List[Tracker.OrganoidTrack], labelColor, outlineAlpha, f
                 color = mainColor
 
             drawer.point(fillCoords, color + (fillAlpha,))
-            borderCoords = ComputeOutline(data.regionProperties.image)
-            globalCoords = borderCoords + data.regionProperties.bbox[:2]
+            borderCoords = ComputeOutline(data.GetRP().image)
+            globalCoords = borderCoords + data.GetRP().bbox[:2]
             xs = list(globalCoords[:, 1])
             ys = list(globalCoords[:, 0])
             outlineCoords = list(zip(xs, ys))
             drawer.point(outlineCoords, color + (outlineAlpha,))
 
-            y, x = list(data.regionProperties.centroid)
+            y, x = list(data.GetRP().centroid)
             drawer.text((x, y), str(track.id), anchor="ms", fill=labelColor, font=font)
 
         baseImage = Image.fromarray(baseImage).convert(mode="RGBA")
