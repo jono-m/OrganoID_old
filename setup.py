@@ -5,7 +5,7 @@ from cx_Freeze import setup, Executable
 build_exe_options = {"packages": ["PIL", "numpy", "skimage", "sklearn", "tflite_runtime"],
                      "excludes": ["tensorflow", "pandas", "matplotlib", "PySide6"],
                      "include_files": ["model/model.tflite",
-                                       r"C:\Users\jonoj\miniconda3\envs\OrganoID\Library\bin\mkl_intel_thread.1.dll"]}
+                                       r"C:\Users\jonoj\miniconda3\envs\OrganoID\Library\bin\mkl_intel_thread.dll"]}
 
 setup(
     name="OrganoID",
