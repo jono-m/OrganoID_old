@@ -5,8 +5,7 @@ OrganoID was run with the following software configuration:
 - Python 3.8
 
 
-
-
+The compiled executable can be downloaded <a href="https://drive.google.com/drive/folders/1xFUkUANFvqCjudQk7SYDj7uY7xVvmUJP?usp=sharing">here</a>.
 
 
 ---
