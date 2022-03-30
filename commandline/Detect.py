@@ -27,7 +27,7 @@ class Detect(Program):
         from backend.Detector import Detector
 
         # Load the images
-        images = LoadImages(parserArgs.imagesPath, size=[512, 512], mode="L")
+        images = LoadImages(parserArgs.imagesPath, mode="L")
 
         # Load neural network detector
         detector = Detector(parserArgs.modelPath)

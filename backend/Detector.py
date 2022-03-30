@@ -1,6 +1,7 @@
 from tflite_runtime.interpreter import Interpreter
 
 from pathlib import Path
+from PIL import Image
 import numpy as np
 import skimage.color as colors
 import typing
@@ -15,13 +16,15 @@ class Detector:
         self._interpreter.allocate_tensors()
 
     def Detect(self, image: np.ndarray) -> np.ndarray:
-        if True:
-            image = 255 * ((image - image.min()) / (image.max() - image.min()))
+        inSize = reversed(image.shape[:2])
+        image = np.asarray(Image.fromarray(image).resize([512, 512]))
+        image = 255 * ((image - image.min()) / (image.max() - image.min()))
         image = np.reshape(image, self._inputShape).astype(np.float32)
         self._interpreter.set_tensor(self._inputIndex, image)
         self._interpreter.invoke()
-        output = self._interpreter.get_tensor(self._output_index)
-        return output[0, :, :, 0]
+        output = self._interpreter.get_tensor(self._output_index)[0, :, :, 0]
+        output = np.asarray(Image.fromarray(output).resize(inSize))
+        return output
 
     def DetectMultiple(self, images: typing.List[np.ndarray]) -> np.ndarray:
         stackedImages = np.expand_dims(np.stack(images), axis=-1).astype(np.float32)
