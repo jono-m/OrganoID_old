@@ -45,8 +45,8 @@ segmentationsPath = Path(r"dataset\testing\segmentations")
 
 detector = Detector(modelPath)
 
-images = LoadImages(imagesPath, [512, 512], mode="L")
-segmentations = LoadImages(segmentationsPath, [512, 512], mode="1")
+images = LoadImages(imagesPath, mode="L")
+segmentations = LoadImages(segmentationsPath, mode="1")
 
 organoidAreas = []
 

@@ -10,7 +10,7 @@ from PIL import Image
 from backend.ImageManager import LoadImages, ShowImage
 
 dosages = [np.inf, 0, None, 1000, 300, 100, 30, 10, 3, 1000, 300, 100, 30, 10, 3, np.inf, 0, None]
-fluorescenceImages = LoadImages(Path(r"E:\FluoroFiles\*C3*"), size=(512, 512))
+fluorescenceImages = LoadImages(Path(r"E:\FluoroFiles\*C3*"))
 labeledImages = LoadImages(Path(r"E:\FluoroFiles\labeled\*labeled*"))
 
 

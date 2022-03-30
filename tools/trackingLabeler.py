@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
         self.rawLabeledImage = list(LoadImages(
             r"dataset\demo\labeled\20210127_organoidplate003_XY36_Z3_C2_detected_labeled.tiff"))[0]
         self.originalImage = list(LoadImages(
-            r"dataset\demo\20210127_organoidplate003_XY36_Z3_C2.tif", (512, 512), "L"))[0]
+            r"dataset\demo\20210127_organoidplate003_XY36_Z3_C2.tif", "L"))[0]
         self.width, self.height = self.rawLabeledImage.frames[0].shape
 
         self.allRegionProps = [regionprops(frame) for frame in self.rawLabeledImage.frames]

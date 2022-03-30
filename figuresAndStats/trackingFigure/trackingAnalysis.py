@@ -92,7 +92,7 @@ labeledImages = \
         0].frames
 
 originalImage = list(LoadImages(
-    r"dataset\demo\20210127_organoidplate003_XY36_Z3_C2.tif", (512, 512), "L"))[0].frames
+    r"dataset\demo\20210127_organoidplate003_XY36_Z3_C2.tif", "L"))[0].frames
 
 regionPropsAll = [regionprops(image) for image in labeledImages]
 

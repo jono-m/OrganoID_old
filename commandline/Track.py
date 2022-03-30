@@ -32,8 +32,8 @@ class Track(Program):
 
         if parserArgs.batch:
             # Load labeled images
-            labeledImages = LoadImages(parserArgs.labeledImagesPath, size=[512, 512])
-            originalImages = LoadImages(parserArgs.originalImagesPath, size=[512, 512], mode='L')
+            labeledImages = LoadImages(parserArgs.labeledImagesPath)
+            originalImages = LoadImages(parserArgs.originalImagesPath, mode='L')
 
             count = 1
 
@@ -73,7 +73,7 @@ class Track(Program):
             return
 
         # Load labeled images
-        labeledImages = LoadImages(parserArgs.labeledImagesPath, size=[512, 512])
+        labeledImages = LoadImages(parserArgs.labeledImagesPath)
 
         count = 1
 
@@ -88,7 +88,7 @@ class Track(Program):
                 count += 1
 
         # Load original images
-        originalImages = LoadImages(parserArgs.originalImagesPath, size=[512, 512], mode='L')
+        originalImages = LoadImages(parserArgs.originalImagesPath, mode='L')
         originalFrames = [frame for baseImage in originalImages for frame in baseImage.frames]
         outputImages = LabelTracks(tracker.GetTracks(), (255, 255, 255, 255), 255, 50, (0, 205, 108), {},
                                    originalFrames)

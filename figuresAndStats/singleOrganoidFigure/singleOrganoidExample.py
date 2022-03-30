@@ -14,7 +14,7 @@ import numpy as np
 from skimage.measure import regionprops
 
 imageFile = Path(r"dataset\demo")
-image = list(LoadImages(imageFile, size=(512, 512), mode="L"))[0].frames[26]
+image = list(LoadImages(imageFile, mode="L"))[0].frames[26]
 
 detector = Detector(Path(r"model\model.tflite"))
 detected = detector.Detect(image)

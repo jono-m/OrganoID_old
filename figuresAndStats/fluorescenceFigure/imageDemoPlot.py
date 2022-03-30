@@ -21,8 +21,8 @@ def GetDosage(xy: int):
     return dosages[int(xy / 6)]
 
 
-originalImages = LoadImages(Path(r"E:\FluoroFiles\*C1*"), mode="L", size=(512, 512))
-fluorescenceImages = LoadImages(Path(r"E:\FluoroFiles\*C3*"), mode="L", size=(512, 512))
+originalImages = LoadImages(Path(r"E:\FluoroFiles\*C1*"), mode="L")
+fluorescenceImages = LoadImages(Path(r"E:\FluoroFiles\*C3*"), mode="L")
 labeledImages = LoadImages(Path(r"E:\FluoroFiles\labeled\*labeled*"))
 
 maxXY = 54

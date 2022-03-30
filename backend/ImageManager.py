@@ -22,6 +22,9 @@ class SmartImage:
         self.path = path
         self.frames = frames
 
+    def Resize(self, newSize):
+        return SmartImage(self.path, [np.asarray(Image.fromarray(frame).resize(newSize)) for frame in self.frames])
+    
     def DoOperation(self, operation: Callable[[np.ndarray], np.ndarray], verboseLabel):
         images = []
         for i, frame in enumerate(self.frames):
@@ -34,15 +37,15 @@ class SmartImage:
 # Lazy load of images from a string or Path-like object of a directory, file, or stack.
 # size: A tuple (width, height) -- resize loaded images to this size
 # mode: the image mode to convert all loaded images into (from PIL library, e.g. "L", "1", "RGB")
-def LoadImages(source: Union[Path, str, List], size=None, mode=None) -> List[SmartImage]:
+def LoadImages(source: Union[Path, str, List], mode=None) -> List[SmartImage]:
     if isinstance(source, list):
         # Iterate through path lists
         for i in source:
-            for image in LoadImages(i, size, mode):
+            for image in LoadImages(i, mode):
                 yield image
     elif isinstance(source, str):
         # Convert strings to Path-like
-        for image in LoadImages(Path(source), size, mode):
+        for image in LoadImages(Path(source), mode):
             yield image
     elif isinstance(source, Path):
         if source.is_dir():
@@ -50,7 +53,7 @@ def LoadImages(source: Union[Path, str, List], size=None, mode=None) -> List[Sma
             source = [path for path in source.iterdir() if path.is_file()]
             # Sort alphabetically and respect numbering (important for image tracking)
             sort_paths_nicely(source)
-            for image in LoadImages(source, size, mode):
+            for image in LoadImages(source, mode):
                 yield image
         else:
             if not source.is_file():
@@ -59,7 +62,7 @@ def LoadImages(source: Union[Path, str, List], size=None, mode=None) -> List[Sma
                 directory = source.parent
                 source = [path for path in directory.glob(regex) if path.is_file()]
                 sort_paths_nicely(source)
-                for image in LoadImages(source, size, mode):
+                for image in LoadImages(source, mode):
                     yield image
                 return
 
@@ -87,9 +90,6 @@ def LoadImages(source: Union[Path, str, List], size=None, mode=None) -> List[Sma
                         # Convert to expected mode
                         preparedImage = preparedImage.convert(mode=mode)
 
-                if size is not None:
-                    # Resize image
-                    preparedImage = preparedImage.resize(size)
                 preparedImages.append(np.asarray(preparedImage))
 
             yield SmartImage(source, preparedImages)

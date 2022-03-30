@@ -24,7 +24,7 @@ class Analyze(Program):
         from skimage.measure import regionprops
 
         # Load images
-        images = LoadImages(parserArgs.imagesPath, size=[512, 512])
+        images = LoadImages(parserArgs.imagesPath)
 
         features = parserArgs.measurements
         count = 1

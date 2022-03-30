@@ -43,7 +43,7 @@ class ModelDataGenerator(tf.keras.utils.Sequence):
         imageData = np.zeros([len(imagePaths), self.imageSize[0], self.imageSize[1], 1], dtype=np.uint8)
 
         for imageIndex in range(len(imagePaths)):
-            image = next(LoadImages(imagePaths[imageIndex], size=self.imageSize, mode="L")).frames[0]
+            image = next(LoadImages(imagePaths[imageIndex], mode="L")).Resize(self.imageSize).frames[0]
             # Auto-contrast
             image = 255 * ((image - image.min()) / (image.max() - image.min()))
             imageData[imageIndex, :, :, 0] = image
@@ -53,7 +53,7 @@ class ModelDataGenerator(tf.keras.utils.Sequence):
         segmentationData = np.zeros([len(segmentationPaths), self.imageSize[0], self.imageSize[1], 1], dtype=np.uint8)
 
         for segmentationIndex in range(len(segmentationPaths)):
-            segmentationData[segmentationIndex, :, :, 0] = next(LoadImages(segmentationPaths[segmentationIndex],
-                                                                           size=self.imageSize, mode="1")).frames[0]
+            segmentationData[segmentationIndex, :, :, 0] = \
+            next(LoadImages(segmentationPaths[segmentationIndex], mode="1")).Resize(self.imageSize).frames[0]
 
         return segmentationData

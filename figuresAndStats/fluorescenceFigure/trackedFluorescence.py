@@ -63,7 +63,7 @@ def GetPatient(xy: int):
     return xy >= 54
 
 
-fluorescenceImages = LoadImages(Path(r"E:\FluoroFiles\*C3*"), size=(512, 512))
+fluorescenceImages = LoadImages(Path(r"E:\FluoroFiles\*C3*"))
 organoidImages = LoadImages(Path(r"E:\FluoroFiles\labeled\*labeled*"))
 trackingFiles = Path(r"E:\FluoroFiles\tracked").glob("*Results*")
 labelMapsByXY = {GetXY(path.stem): ParseMap(path) for path in trackingFiles}

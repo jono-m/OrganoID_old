@@ -43,8 +43,8 @@ ious = []
 for dataset in datasets:
     imagesPath = Path(r"dataset\testing\images\%s*" % dataset)
     segmentationsPath = Path(r"dataset\testing\segmentations\%s*" % dataset)
-    images = LoadImages(imagesPath, (512, 512), mode="L")
-    segmentations = LoadImages(segmentationsPath, (512, 512), mode="1")
+    images = LoadImages(imagesPath, mode="L")
+    segmentations = LoadImages(segmentationsPath, mode="1")
     confusionMatrices = []
     for (image, segmentation) in zip(images, segmentations):
         print("Analyzing image %s " % image.path.name)

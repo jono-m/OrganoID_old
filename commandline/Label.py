@@ -33,7 +33,7 @@ class Label(Program):
         from backend.Label import Label, DetectEdges
 
         # Load detection images
-        images = LoadImages(parserArgs.detectionsPath, size=[512, 512])
+        images = LoadImages(parserArgs.detectionsPath)
 
         count = 1
         for image in images:
