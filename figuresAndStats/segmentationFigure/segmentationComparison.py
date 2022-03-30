@@ -10,10 +10,10 @@ from PIL import Image
 
 exampleImages = ["ACC3", "C3", "Lung5", "PDAC9"]
 images = [
-    list(LoadImages(Path(r"dataset\testing\images\%s*" % name), mode="L"))[0].frames[0] for name
+    list(LoadImages(Path(r"dataset\testing\images\%s*" % name), mode="L"))[0].Resize([512, 512]).frames[0] for name
     in exampleImages]
 groundTruthImages = [
-    list(LoadImages(Path(r"dataset\testing\segmentations\%s*" % name), mode="1"))[0].frames[0] for name
+    list(LoadImages(Path(r"dataset\testing\segmentations\%s*" % name), mode="1"))[0].Resize([512, 512]).frames[0] for name
     in exampleImages]
 
 outPath = Path(r"figuresAndStats\segmentationFigure\images")
