@@ -5,12 +5,11 @@ OrganoID was run with the following software configuration:
 - Python 3.8
 
 
-The compiled executable can be downloaded <a href="https://drive.google.com/drive/folders/1xFUkUANFvqCjudQk7SYDj7uY7xVvmUJP?usp=sharing">here</a>.
-
+<b>The compiled executable can be downloaded <a href="https://drive.google.com/drive/folders/1xFUkUANFvqCjudQk7SYDj7uY7xVvmUJP?usp=sharing">here</a>.</b>
 
 ---
 
-INSTALLATION:
+SOURCE CODE INSTALLATION:
 
 To set up OrganoID source dependencies, you could set up a venv environment first via
 
@@ -34,6 +33,8 @@ OrganoID with support for model training and data augmentation:
 
 INSTRUCTIONS:
 
-OrganoID is run from the command line. To see instructions for use, run:
+OrganoID is currently only available as a command line tool. To see instructions for use, run:
 
 >> python OrganoID.py -h
+
+A PySide6 graphical interface for OrganoID and an ImageJ plugin are in development with expected release mid-2022.
