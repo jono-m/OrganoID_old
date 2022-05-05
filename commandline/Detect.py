@@ -27,8 +27,8 @@ class Detect(Program):
         from backend.Detector import Detector
 
         # Load the images
-        images = LoadImages(parserArgs.imagesPath, mode="L")
-
+        images = LoadImages(parserArgs.imagesPath, size=[512, 512], mode="L")
+        images = list(images)
         # Load neural network detector
         detector = Detector(parserArgs.modelPath)
 
@@ -36,6 +36,7 @@ class Detect(Program):
         outputImages = []
 
         for image in images:
+            ShowImage(image.frames[0], image.originalSize)
             print("Detecting %d: %s" % (count, image.path))
             count += 1
 
@@ -69,4 +70,4 @@ class Detect(Program):
         if parserArgs.show:
             for outputImage in outputImages:
                 for frame in outputImage.frames:
-                    ShowImage(frame)
+                    ShowImage(frame, outputImage.originalSize)

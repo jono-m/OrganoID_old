@@ -18,34 +18,32 @@ from util import Printer
 
 # A SmartImage maintains knowledge about the path that an image was loaded from (and groups stacks together)
 class SmartImage:
-    def __init__(self, path: Path, frames: List[np.ndarray]):
+    def __init__(self, path: Path, frames: List[np.ndarray], originalSize):
         self.path = path
         self.frames = frames
+        self.originalSize = originalSize
 
-    def Resize(self, newSize):
-        return SmartImage(self.path, [np.asarray(Image.fromarray(frame).resize(newSize)) for frame in self.frames])
-    
     def DoOperation(self, operation: Callable[[np.ndarray], np.ndarray], verboseLabel):
         images = []
         for i, frame in enumerate(self.frames):
             Printer.printRep("%s: %d/%d" % (verboseLabel, i + 1, len(self.frames)))
             images.append(operation(frame))
         Printer.printRep()
-        return SmartImage(self.path, images)
+        return SmartImage(self.path, images, self.originalSize)
 
 
 # Lazy load of images from a string or Path-like object of a directory, file, or stack.
 # size: A tuple (width, height) -- resize loaded images to this size
 # mode: the image mode to convert all loaded images into (from PIL library, e.g. "L", "1", "RGB")
-def LoadImages(source: Union[Path, str, List], mode=None) -> List[SmartImage]:
+def LoadImages(source: Union[Path, str, List], size=None, mode=None) -> List[SmartImage]:
     if isinstance(source, list):
         # Iterate through path lists
         for i in source:
-            for image in LoadImages(i, mode):
+            for image in LoadImages(i, size, mode):
                 yield image
     elif isinstance(source, str):
         # Convert strings to Path-like
-        for image in LoadImages(Path(source), mode):
+        for image in LoadImages(Path(source), size, mode):
             yield image
     elif isinstance(source, Path):
         if source.is_dir():
@@ -53,7 +51,7 @@ def LoadImages(source: Union[Path, str, List], mode=None) -> List[SmartImage]:
             source = [path for path in source.iterdir() if path.is_file()]
             # Sort alphabetically and respect numbering (important for image tracking)
             sort_paths_nicely(source)
-            for image in LoadImages(source, mode):
+            for image in LoadImages(source, size, mode):
                 yield image
         else:
             if not source.is_file():
@@ -62,7 +60,7 @@ def LoadImages(source: Union[Path, str, List], mode=None) -> List[SmartImage]:
                 directory = source.parent
                 source = [path for path in directory.glob(regex) if path.is_file()]
                 sort_paths_nicely(source)
-                for image in LoadImages(source, mode):
+                for image in LoadImages(source, size, mode):
                     yield image
                 return
 
@@ -74,10 +72,12 @@ def LoadImages(source: Union[Path, str, List], mode=None) -> List[SmartImage]:
             numFrames = getattr(rawImage, "n_frames", 1)
             preparedImages = []
             # Load image, which possibly has multiple frames (e.g. TIFF stack)
+            originalSize = None
             for frame_number in range(numFrames):
                 rawImage.seek(frame_number)
 
                 preparedImage = rawImage
+                originalSize = preparedImage.size
 
                 if mode is not None:
                     if preparedImage.mode[0] == 'I' and mode == "L":
@@ -90,16 +90,22 @@ def LoadImages(source: Union[Path, str, List], mode=None) -> List[SmartImage]:
                         # Convert to expected mode
                         preparedImage = preparedImage.convert(mode=mode)
 
+                if size is not None:
+                    # Resize image
+                    preparedImage = preparedImage.resize(size)
                 preparedImages.append(np.asarray(preparedImage))
 
-            yield SmartImage(source, preparedImages)
+            yield SmartImage(source, preparedImages, originalSize)
     else:
         raise TypeError("source must be a list, string, or Path-like. Not " + str(type(source)))
 
 
 # Displays a numpy array as an image
-def ShowImage(frame: np.ndarray):
-    Image.fromarray(frame).show()
+def ShowImage(frame: np.ndarray, size=None):
+    if size is not None:
+        Image.fromarray(frame).resize(size).show()
+    else:
+        Image.fromarray(frame).show()
 
 
 # Saves a list of images as a GIF.
