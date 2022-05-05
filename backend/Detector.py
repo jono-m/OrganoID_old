@@ -27,36 +27,8 @@ class Detector:
         output = np.asarray(Image.fromarray(output).resize(inSize))
         return output
 
-    def ListIntermediates(self):
-        return [x for x in self._interpreter.get_tensor_details() if len(x['shape']) == 4 and len(x['name']) < 35]
-
-    def Visualize(self, i):
-        i = i[0, :, :, :]
-        blockHeight, blockWidth, numBlocks = i.shape
-        rows = 2**int(np.log2(np.sqrt(numBlocks)))
-        columns = int(numBlocks/rows)
-        image = np.zeros([rows*blockHeight, columns*blockWidth], dtype=np.float32)
-        for row in range(rows):
-            for column in range(columns):
-                blockNumber = row*columns + column
-                block = i[:, :, blockNumber]
-                image[(row*blockHeight):((row+1)*blockHeight),(column*blockWidth):((column+1)*blockWidth)] = self.Contrast(block)
-        Image.fromarray(image).show()
-
-    def GetIntermediateByIndex(self, i):
-        return self.GetIntermediate(self.ListIntermediates()[i]['name'])
-
     def Contrast(self, i):
         return 255 * (i - i.min()) / (i.max()-i.min())
-
-    def GetIntermediate(self, layerName):
-        eluTargetName = "model/" + layerName + "/Elu"
-        maxPoolTargetName = "model/" + layerName + "/MaxPool"
-        concatTargetName = "model/" + layerName + "/concat"
-        names = [eluTargetName, maxPoolTargetName, concatTargetName, layerName]
-        index = [i for i, tensorDetail in enumerate(self._interpreter.get_tensor_details()) if tensorDetail['name'] in names]
-        print("Index: " + str(index))
-        return self._interpreter.get_tensor(index[0])
 
     def DetectMultiple(self, images: typing.List[np.ndarray]) -> np.ndarray:
         stackedImages = np.expand_dims(np.stack(images), axis=-1).astype(np.float32)

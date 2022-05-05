@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import keras
 import numpy as np
 from PIL import Image
 from backend.ImageManager import LoadImages
@@ -25,8 +24,8 @@ def Visualize(i, size=None):
             (column * blockWidth):((column + 1) * blockWidth)] = Contrast(block)
     image = Image.fromarray(image)
     if(size):
-        image = image.resize([image.size[0]*size, image.size[1]*size])
-    Image.fromarray(image).show()
+        image = image.resize([image.size[0]*size, image.size[1]*size], resample=Image.NEAREST)
+    image.show()
 
 image = LoadImages(Path(r"dataset\demo"), mode="L")
 image = list(image)[0].frames[0]
@@ -35,11 +34,11 @@ image = np.reshape(image, [1, 512, 512, 1]).astype(np.float32)
 image = Contrast(image)
 
 model = tf.keras.models.load_model(str(Path(r"model2\fullModel")))
-
-Visualize(model.get_layer("conv2d").get_weights()[0].reshape(1, 3, 3, 8), 8)
+model.summary()
+# Visualize(model.get_layer("conv2d").get_weights()[0].reshape(1, 3, 3, 8))
 #
 # layers = ["conv2d_18"]
 # for layer in layers:
-#     intermediateModel = keras.Model(inputs=model.input, outputs=model.get_layer(layer).output)
+#     intermediateModel = tf.keras.Model(inputs=model.input, outputs=model.get_layer(layer).output)
 #     intermediateOutput = intermediateModel.predict(image)
 #     Visualize(intermediateOutput)
