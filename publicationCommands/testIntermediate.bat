@@ -1,0 +1,1 @@
+python OrganoID.py detect model\model.tflite dataset\demo

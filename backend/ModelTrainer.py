@@ -69,6 +69,7 @@ class ModelTrainer:
 
         if outputPath is not None:
             self.SaveLiteModel(outputPath / "model.tflite", self.ConvertToLiteModel(self._model))
+            self.SaveModel(outputPath / "fullModel", self._model)
 
     # Use TFLite to minimize memory overhead for saved models and inference.
     @staticmethod
@@ -81,6 +82,10 @@ class ModelTrainer:
         savePath = path
         with open(savePath, "wb") as f:
             f.write(liteModel)
+
+    @staticmethod
+    def SaveModel(path: Path, fullModel: Model):
+        fullModel.save(path)
 
     # After every epoch, save the training and validation performance, as well as a copy of the model.
     class ModelSavingCallback(Callback):
@@ -95,6 +100,7 @@ class ModelTrainer:
             savePath = self.path / ("epoch_" + str(epoch) + ".tflite")
 
             ModelTrainer.SaveLiteModel(savePath, ModelTrainer.ConvertToLiteModel(self.model))
+            ModelTrainer.SaveModel(self.path / ("epoch_" + str(epoch) + "_fullModel"), self.model)
             self.trainLosses.append(str(logs['loss']))
             self.validationLosses.append(str(logs['val_loss']))
 
